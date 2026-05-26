@@ -1,0 +1,41 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build core
+        working-directory: dicoshot-core
+        run: npm run build
+
+      - name: Publish core
+        working-directory: dicoshot-core
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build nest
+        working-directory: dicoshot-nest
+        run: npm run build
+
+      - name: Publish nest
+        working-directory: dicoshot-nest
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          //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
