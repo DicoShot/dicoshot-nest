@@ -1,0 +1,1 @@
+export const DICOSHOT_OPTIONS = 'DICOSHOT_OPTIONS';

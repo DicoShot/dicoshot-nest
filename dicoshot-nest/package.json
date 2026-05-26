@@ -3,7 +3,12 @@
   "version": "0.0.1",
   "description": "",
   "author": "",
-  "private": true,
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
@@ -23,8 +28,13 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "dicoshot-core": "*",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10",
+    "@nestjs/core": "^10"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
