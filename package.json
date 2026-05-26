@@ -1,0 +1,8 @@
+{
+  "name": "dicoshot-nest",
+  "private": true,
+  "workspaces": [
+    "dicoshot-core",
+    "dicoshot-nest"
+  ]
+}
