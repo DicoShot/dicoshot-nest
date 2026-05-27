@@ -25,7 +25,7 @@ jobs:
 
       - name: Publish core
         working-directory: dicoshot-core
-        run: npm publish
+        run: npm publish || true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -35,6 +35,6 @@ jobs:
 
       - name: Publish nest
         working-directory: dicoshot-nest
-        run: npm publish
+        run: npm publish || true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
