@@ -131,4 +131,4 @@ cd dicoshot-nest && npm run build
 
 ## License
 
-MIT License © 2026 DicoShot
+[MIT License](LICENSE) © 2026 DicoShot
