@@ -1,12 +1,19 @@
 import { Module, DynamicModule, Provider, ModuleMetadata } from '@nestjs/common';
-import { DicoshotOptions } from 'dicoshot-core';
-import { DICOSHOT_OPTIONS } from './dicoshot.constants';
+import { DicoshotOptions, DicoshotClientImpl } from 'dicoshot-core';
+import { DICOSHOT_OPTIONS, DICOSHOT_CLIENT } from './dicoshot.constants';
 import { DicoshotListener } from './dicoshot.listener';
+import { DicoshotService } from './dicoshot.service';
 
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;
   inject?: unknown[];
 }
+
+const clientProvider: Provider = {
+  provide: DICOSHOT_CLIENT,
+  useFactory: (options: DicoshotOptions) => new DicoshotClientImpl(options),
+  inject: [DICOSHOT_OPTIONS],
+};
 
 @Module({})
 export class DicoshotModule {
@@ -15,8 +22,11 @@ export class DicoshotModule {
       module: DicoshotModule,
       providers: [
         { provide: DICOSHOT_OPTIONS, useValue: options },
+        clientProvider,
         DicoshotListener,
+        DicoshotService,
       ],
+      exports: [DicoshotService],
     };
   }
 
@@ -29,7 +39,8 @@ export class DicoshotModule {
     return {
       module: DicoshotModule,
       imports: imports ?? [],
-      providers: [optionsProvider, DicoshotListener],
+      providers: [optionsProvider, clientProvider, DicoshotListener, DicoshotService],
+      exports: [DicoshotService],
     };
   }
 }

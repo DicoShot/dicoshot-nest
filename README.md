@@ -5,6 +5,7 @@ NestJS 애플리케이션이 시작/종료될 때 Discord 채널로 알림을 �
 ## 특징
 
 - **자동 알림**: `OnApplicationBootstrap`과 `OnApplicationShutdown` 훅을 사용하여 별도 코드 없이 동작
+- **커스텀 메시지**: `DicoshotService`를 주입받아 임의의 타이밍에 Discord 메시지 직접 발송 가능
 - **장애 격리**: webhook 전송 실패가 앱 기동/종료를 막지 않음 (WARN 로그만 출력)
 - **MSA 친화**: hostname과 applicationName이 메시지에 자동 포함되어 인스턴스 구분 용이
 - **환경 자동 감지**: `NODE_ENV`, `npm_package_version` 자동 포함
@@ -57,6 +58,55 @@ DicoshotModule.registerAsync({
   inject: [ConfigService],
 })
 ```
+
+## 커스텀 메시지 직접 발송
+
+`DicoshotService`를 주입받아 코드 어디서든 Discord 메시지를 발송할 수 있습니다.
+
+### sendCustom() — 편의 메서드
+
+```typescript
+@Injectable()
+export class DeployService {
+  constructor(private readonly dicoshot: DicoshotService) {}
+
+  async onDeployComplete(version: string) {
+    await this.dicoshot.sendCustom({
+      title: '배포 완료',
+      description: `v${version} 정상 배포`,
+      color: 'success',   // 'success' | 'danger' | 'warning' | 'info'
+    });
+  }
+}
+```
+
+색상 프리셋:
+
+| 값 | 색상 |
+|----|------|
+| `'success'` | 녹색 |
+| `'danger'` | 빨간색 |
+| `'warning'` | 노란색 |
+| `'info'` | 파란색 |
+
+hex 값을 직접 지정할 수도 있습니다: `color: 0xFF0000`
+
+### send() — raw 메서드
+
+Discord embed 구조를 직접 구성해서 발송합니다.
+
+```typescript
+await this.dicoshot.send({
+  embeds: [{
+    title: '알림',
+    description: '...',
+    color: 0x57F287,
+    fields: [{ name: '버전', value: 'v1.2.3', inline: true }],
+  }],
+});
+```
+
+> 두 메서드 모두 실패 시 에러를 throw합니다. try/catch로 처리하세요.
 
 ## 설정
 
@@ -127,7 +177,6 @@ cd dicoshot-nest && npm run build
 - 예외/에러 발생 시 자동 알림
 - 재시도, 백오프, 비동기 큐잉
 - 다중 webhook 또는 Slack 등 타 플랫폼
-- 커스텀 메시지 직접 발송 (`DicoshotService` 주입)
 
 ## License
 

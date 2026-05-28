@@ -7,20 +7,19 @@ import {
 } from '@nestjs/common';
 import type { DicoshotOptions } from 'dicoshot-core';
 import { DicoshotClientImpl, MessageFactory } from 'dicoshot-core';
-import { DICOSHOT_OPTIONS } from './dicoshot.constants';
+import { DICOSHOT_OPTIONS, DICOSHOT_CLIENT } from './dicoshot.constants';
 
 @Injectable()
 export class DicoshotListener
   implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(DicoshotListener.name);
-  private readonly client: DicoshotClientImpl;
   private readonly factory: MessageFactory;
 
   constructor(
     @Inject(DICOSHOT_OPTIONS) private readonly options: DicoshotOptions,
+    @Inject(DICOSHOT_CLIENT) private readonly client: DicoshotClientImpl,
   ) {
-    this.client = new DicoshotClientImpl(options);
     this.factory = new MessageFactory(options);
   }
 
