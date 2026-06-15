@@ -7,7 +7,11 @@ export class DicoshotClientImpl implements DicoshotClient {
   constructor(private readonly options: DicoshotOptions) {}
 
   async send(message: DiscordMessage): Promise<void> {
-    await axios.post(this.options.webhookUrl, message, {
+    await this.sendTo(this.options.webhookUrl, message);
+  }
+
+  async sendTo(url: string, message: DiscordMessage): Promise<void> {
+    await axios.post(url, message, {
       timeout: this.options.timeoutMs ?? 5000,
       headers: { 'Content-Type': 'application/json' },
     });

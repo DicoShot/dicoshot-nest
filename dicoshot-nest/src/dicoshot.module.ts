@@ -1,12 +1,32 @@
-import { Module, DynamicModule, Provider, ModuleMetadata } from '@nestjs/common';
-import { DicoshotOptions, DicoshotClientImpl } from 'dicoshot-core';
+import {
+  Module,
+  DynamicModule,
+  Provider,
+  ModuleMetadata,
+} from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { DicoshotOptions, DicoshotClientImpl, FilterOptions, InterceptorOptions } from 'dicoshot-core';
 import { DICOSHOT_OPTIONS, DICOSHOT_CLIENT } from './dicoshot.constants';
 import { DicoshotListener } from './dicoshot.listener';
 import { DicoshotService } from './dicoshot.service';
+import { DicoshotExceptionFilter } from './filters/dicoshot-exception.filter';
+import { DicoshotInterceptor } from './interceptors/dicoshot.interceptor';
 
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;
+  useFactory: (
+    ...args: unknown[]
+  ) => Promise<DicoshotOptions> | DicoshotOptions;
   inject?: unknown[];
+  /**
+   * Set at registration time so APP_FILTER is conditionally added.
+   * Merged into DICOSHOT_OPTIONS and overrides the factory's filter value.
+   */
+  filter?: boolean | FilterOptions;
+  /**
+   * Set at registration time so APP_INTERCEPTOR is conditionally added.
+   * Merged into DICOSHOT_OPTIONS and overrides the factory's interceptor value.
+   */
+  interceptor?: boolean | InterceptorOptions;
 }
 
 const clientProvider: Provider = {
@@ -15,31 +35,75 @@ const clientProvider: Provider = {
   inject: [DICOSHOT_OPTIONS],
 };
 
+function buildProviders(options: DicoshotOptions): Provider[] {
+  const providers: Provider[] = [
+    { provide: DICOSHOT_OPTIONS, useValue: options },
+    clientProvider,
+    DicoshotListener,
+    DicoshotService,
+  ];
+
+  if (options.filter) {
+    providers.push({ provide: APP_FILTER, useClass: DicoshotExceptionFilter });
+  }
+
+  if (options.interceptor) {
+    providers.push({ provide: APP_INTERCEPTOR, useClass: DicoshotInterceptor });
+  }
+
+  return providers;
+}
+
 @Module({})
 export class DicoshotModule {
   static register(options: DicoshotOptions): DynamicModule {
     return {
       module: DicoshotModule,
-      providers: [
-        { provide: DICOSHOT_OPTIONS, useValue: options },
-        clientProvider,
-        DicoshotListener,
-        DicoshotService,
-      ],
+      providers: buildProviders(options),
       exports: [DicoshotService],
     };
   }
 
-  static registerAsync({ useFactory, inject, imports }: DicoshotAsyncOptions): DynamicModule {
+  static registerAsync({
+    useFactory,
+    inject,
+    imports,
+    filter,
+    interceptor,
+  }: DicoshotAsyncOptions): DynamicModule {
     const optionsProvider: Provider = {
       provide: DICOSHOT_OPTIONS,
-      useFactory,
+      useFactory: async (...args: unknown[]) => {
+        const opts = await useFactory(...args);
+        // Merge registration-time flags so runtime options stay consistent
+        return {
+          ...opts,
+          ...(filter !== undefined && { filter }),
+          ...(interceptor !== undefined && { interceptor }),
+        };
+      },
       inject: (inject as []) ?? [],
     };
+
+    const providers: Provider[] = [
+      optionsProvider,
+      clientProvider,
+      DicoshotListener,
+      DicoshotService,
+    ];
+
+    if (filter) {
+      providers.push({ provide: APP_FILTER, useClass: DicoshotExceptionFilter });
+    }
+
+    if (interceptor) {
+      providers.push({ provide: APP_INTERCEPTOR, useClass: DicoshotInterceptor });
+    }
+
     return {
       module: DicoshotModule,
       imports: imports ?? [],
-      providers: [optionsProvider, clientProvider, DicoshotListener, DicoshotService],
+      providers,
       exports: [DicoshotService],
     };
   }
