@@ -184,6 +184,33 @@ DicoshotModule.register({
 
 느린 응답 알림은 `webhooks.slow`가 설정되어 있으면 그 URL로, 없으면 기본 `webhookUrl`로 전송됩니다.
 
+## Webhook 재전송 (`retry`)
+
+webhook 전송이 실패하면(네트워크 오류, Discord 5xx, rate limit 등) 지수 백오프로 재시도합니다. Discord가 `429`와 함께 `Retry-After` 헤더를 보내면 그 값을 우선 사용하고, 그 외에는 `backoffMs * 2^시도횟수`로 대기합니다.
+
+```typescript
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  retry: true, // 또는 RetryOptions 객체. 기본값은 꺼져 있음 (재시도 없음)
+})
+```
+
+### RetryOptions
+
+| 키 | 기본값 | 설명 |
+|----|--------|------|
+| `attempts` | `2` | 최초 시도 실패 후 재시도 횟수 |
+| `backoffMs` | `500` | 첫 재시도까지의 대기 시간 (ms). 이후 시도마다 2배씩 증가 |
+
+```typescript
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  retry: { attempts: 3, backoffMs: 300 },
+})
+```
+
+모든 재시도가 실패하면 최종 에러가 호출자에게 전달됩니다. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor`는 이 에러를 잡아 WARN 로그만 남기므로 앱 동작에는 영향이 없습니다.
+
 ## 설정
 
 | 키 | 기본값 | 설명 |
@@ -199,6 +226,7 @@ DicoshotModule.register({
 | `webhooks.slow` | - | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용) |
 | `filter` | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions)) |
 | `interceptor` | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions)) |
+| `retry` | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions)) |
 
 ### 예시: 시작 시에만 알림
 
@@ -271,7 +299,7 @@ cd dicoshot-nest && npm run build
 
 다음 기능은 아직 포함되지 않습니다.
 
-- 재시도, 백오프, 비동기 큐잉
+- 비동기 큐잉 (재시도 외 영구 실패 메시지 보관)
 - 다중 webhook 동시 발송 또는 Slack 등 타 플랫폼
 
 ## License

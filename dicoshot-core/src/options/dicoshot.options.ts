@@ -18,6 +18,11 @@ export interface DicoshotWebhooks {
   slow?: string;
 }
 
+export interface RetryOptions {
+  attempts?: number;
+  backoffMs?: number;
+}
+
 export interface DicoshotOptions {
   webhookUrl: string;
   enabled?: boolean;
@@ -29,4 +34,5 @@ export interface DicoshotOptions {
   webhooks?: DicoshotWebhooks;
   filter?: boolean | FilterOptions;
   interceptor?: boolean | InterceptorOptions;
+  retry?: boolean | RetryOptions;
 }
