@@ -1,0 +1,14 @@
+node_modules/
+**/dist/
+coverage/
+
+.claude/
+.idea/
+.github/
+
+package-lock.json
+**/package-lock.json
+
+*.d.ts
+
+.DS_Store
