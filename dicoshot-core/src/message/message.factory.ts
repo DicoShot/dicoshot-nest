@@ -1,4 +1,5 @@
 import * as os from 'os';
+
 import { DicoshotOptions } from '../options/dicoshot.options';
 import { DiscordMessage } from './discord.message';
 

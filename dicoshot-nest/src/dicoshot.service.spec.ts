@@ -1,15 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DicoshotService } from './dicoshot.service';
+
 import { DICOSHOT_CLIENT } from './dicoshot.constants';
+import { DicoshotService } from './dicoshot.service';
 
 const mockClient = { send: jest.fn() };
 
 async function createService(): Promise<DicoshotService> {
   const module: TestingModule = await Test.createTestingModule({
-    providers: [
-      DicoshotService,
-      { provide: DICOSHOT_CLIENT, useValue: mockClient },
-    ],
+    providers: [DicoshotService, { provide: DICOSHOT_CLIENT, useValue: mockClient }],
   }).compile();
   return module.get(DicoshotService);
 }

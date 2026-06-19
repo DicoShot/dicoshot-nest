@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { DicoshotOptions, RetryOptions } from '../options/dicoshot.options';
+
 import { DiscordMessage } from '../message/discord.message';
+import { DicoshotOptions, RetryOptions } from '../options/dicoshot.options';
 import { DicoshotClient } from './dicoshot.client';
 
 const DEFAULT_RETRY_ATTEMPTS = 2;
