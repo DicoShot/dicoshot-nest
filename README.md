@@ -15,8 +15,8 @@ NestJS 애플리케이션의 시작/종료, 예외 발생, 느린 응답을 Disc
 
 ## 모듈 구성
 
-| 모듈 | 설명 |
-|------|------|
+| 모듈            | 설명                                                                |
+| --------------- | ------------------------------------------------------------------- |
 | `dicoshot-core` | NestJS 의존성 없는 순수 TypeScript. 메시지 모델, Webhook 클라이언트 |
 | `dicoshot-nest` | NestJS DynamicModule, 라이프사이클 훅, ExceptionFilter, Interceptor |
 
@@ -64,7 +64,7 @@ DicoshotModule.registerAsync({
   //  비동기 팩토리 결과와 무관하게 등록 시점 값으로 고정됩니다)
   filter: true,
   interceptor: { slowThreshold: 2000 },
-})
+});
 ```
 
 ## 커스텀 메시지 직접 발송
@@ -82,7 +82,7 @@ export class DeployService {
     await this.dicoshot.sendCustom({
       title: '배포 완료',
       description: `v${version} 정상 배포`,
-      color: 'success',   // 'success' | 'danger' | 'warning' | 'info'
+      color: 'success', // 'success' | 'danger' | 'warning' | 'info'
     });
   }
 }
@@ -90,12 +90,12 @@ export class DeployService {
 
 색상 프리셋:
 
-| 값 | 색상 |
-|----|------|
-| `'success'` | 녹색 |
-| `'danger'` | 빨간색 |
+| 값          | 색상   |
+| ----------- | ------ |
+| `'success'` | 녹색   |
+| `'danger'`  | 빨간색 |
 | `'warning'` | 노란색 |
-| `'info'` | 파란색 |
+| `'info'`    | 파란색 |
 
 hex 값을 직접 지정할 수도 있습니다: `color: 0xFF0000`
 
@@ -105,12 +105,14 @@ Discord embed 구조를 직접 구성해서 발송합니다.
 
 ```typescript
 await this.dicoshot.send({
-  embeds: [{
-    title: '알림',
-    description: '...',
-    color: 0x57F287,
-    fields: [{ name: '버전', value: 'v1.2.3', inline: true }],
-  }],
+  embeds: [
+    {
+      title: '알림',
+      description: '...',
+      color: 0x57f287,
+      fields: [{ name: '버전', value: 'v1.2.3', inline: true }],
+    },
+  ],
 });
 ```
 
@@ -125,19 +127,19 @@ DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   applicationName: 'order-service',
   filter: true, // 또는 FilterOptions 객체
-})
+});
 ```
 
 ### FilterOptions
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `ignore` | - | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`) |
-| `environment` | - | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준) |
-| `mention` | - | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`) |
-| `throttle` | - | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제 |
-| `includeStack` | `true` | 스택트레이스 포함 여부 |
-| `includeRequest` | `true` | 요청 바디 포함 여부 |
+| 키               | 기본값 | 설명                                                           |
+| ---------------- | ------ | -------------------------------------------------------------- |
+| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)              |
+| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준) |
+| `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)          |
+| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제        |
+| `includeStack`   | `true` | 스택트레이스 포함 여부                                         |
+| `includeRequest` | `true` | 요청 바디 포함 여부                                            |
 
 ```typescript
 DicoshotModule.register({
@@ -148,7 +150,7 @@ DicoshotModule.register({
     mention: '<@&123456789012345678>',
     throttle: 60, // 같은 에러는 60초에 한 번만 알림
   },
-})
+});
 ```
 
 에러 알림은 `webhooks.error`가 설정되어 있으면 그 URL로, 없으면 기본 `webhookUrl`로 전송됩니다.
@@ -161,16 +163,16 @@ DicoshotModule.register({
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   interceptor: true, // 또는 InterceptorOptions 객체
-})
+});
 ```
 
 ### InterceptorOptions
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `slowThreshold` | `3000` | 느린 응답으로 판단할 기준 시간 (ms) |
-| `excludePaths` | - | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`) |
-| `onlyErrors` | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행 |
+| 키              | 기본값  | 설명                                                 |
+| --------------- | ------- | ---------------------------------------------------- |
+| `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                  |
+| `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`) |
+| `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행    |
 
 ```typescript
 DicoshotModule.register({
@@ -179,7 +181,7 @@ DicoshotModule.register({
     slowThreshold: 1500,
     excludePaths: ['/health', '/metrics'],
   },
-})
+});
 ```
 
 느린 응답 알림은 `webhooks.slow`가 설정되어 있으면 그 URL로, 없으면 기본 `webhookUrl`로 전송됩니다.
@@ -192,41 +194,41 @@ webhook 전송이 실패하면(네트워크 오류, Discord 5xx, rate limit 등)
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   retry: true, // 또는 RetryOptions 객체. 기본값은 꺼져 있음 (재시도 없음)
-})
+});
 ```
 
 ### RetryOptions
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `attempts` | `2` | 최초 시도 실패 후 재시도 횟수 |
-| `backoffMs` | `500` | 첫 재시도까지의 대기 시간 (ms). 이후 시도마다 2배씩 증가 |
+| 키          | 기본값 | 설명                                                     |
+| ----------- | ------ | -------------------------------------------------------- |
+| `attempts`  | `2`    | 최초 시도 실패 후 재시도 횟수                            |
+| `backoffMs` | `500`  | 첫 재시도까지의 대기 시간 (ms). 이후 시도마다 2배씩 증가 |
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   retry: { attempts: 3, backoffMs: 300 },
-})
+});
 ```
 
 모든 재시도가 실패하면 최종 에러가 호출자에게 전달됩니다. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor`는 이 에러를 잡아 WARN 로그만 남기므로 앱 동작에는 영향이 없습니다.
 
 ## 설정
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `webhookUrl` | **(필수)** | Discord Webhook URL. 미설정 시 자동 비활성화 |
-| `enabled` | `true` | 전체 활성화 토글 (시작/종료 알림에 적용) |
-| `notifyOnStartup` | `true` | 시작 알림 발송 여부 |
-| `notifyOnShutdown` | `true` | 종료 알림 발송 여부 |
-| `applicationName` | - | embed에 표시될 서비스 이름 |
-| `username` | - | webhook bot의 표시 이름 override |
-| `timeoutMs` | `5000` | HTTP 타임아웃 (ms) |
-| `webhooks.error` | - | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용) |
-| `webhooks.slow` | - | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용) |
-| `filter` | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions)) |
-| `interceptor` | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions)) |
-| `retry` | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions)) |
+| 키                 | 기본값     | 설명                                                                                    |
+| ------------------ | ---------- | --------------------------------------------------------------------------------------- |
+| `webhookUrl`       | **(필수)** | Discord Webhook URL. 미설정 시 자동 비활성화                                            |
+| `enabled`          | `true`     | 전체 활성화 토글 (시작/종료 알림에 적용)                                                |
+| `notifyOnStartup`  | `true`     | 시작 알림 발송 여부                                                                     |
+| `notifyOnShutdown` | `true`     | 종료 알림 발송 여부                                                                     |
+| `applicationName`  | -          | embed에 표시될 서비스 이름                                                              |
+| `username`         | -          | webhook bot의 표시 이름 override                                                        |
+| `timeoutMs`        | `5000`     | HTTP 타임아웃 (ms)                                                                      |
+| `webhooks.error`   | -          | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                   |
+| `webhooks.slow`    | -          | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                              |
+| `filter`           | `false`    | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                |
+| `interceptor`      | `false`    | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions)) |
+| `retry`            | `false`    | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))     |
 
 ### 예시: 시작 시에만 알림
 
@@ -236,21 +238,21 @@ DicoshotModule.register({
   notifyOnShutdown: false,
   applicationName: 'order-service',
   username: 'Dicoshot Bot',
-})
+});
 ```
 
 ### 예시: 에러/느린 응답을 다른 채널로 분리
 
 ```typescript
 DicoshotModule.register({
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL,        // 시작/종료 알림용
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL, // 시작/종료 알림용
   webhooks: {
-    error: process.env.DISCORD_ERROR_WEBHOOK_URL,      // 예외 알림용
-    slow: process.env.DISCORD_SLOW_WEBHOOK_URL,         // 느린 응답 알림용
+    error: process.env.DISCORD_ERROR_WEBHOOK_URL, // 예외 알림용
+    slow: process.env.DISCORD_SLOW_WEBHOOK_URL, // 느린 응답 알림용
   },
   filter: { environment: 'production' },
   interceptor: { slowThreshold: 2000 },
-})
+});
 ```
 
 ### 예시: 환경 변수로 webhook URL 주입
@@ -258,7 +260,7 @@ DicoshotModule.register({
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? '',
-})
+});
 ```
 
 값이 비어있으면 자동으로 비활성화되어 로컬 개발 환경에서 오류가 발생하지 않습니다.

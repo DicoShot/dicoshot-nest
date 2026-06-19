@@ -1,21 +1,21 @@
-import {
-  Module,
-  DynamicModule,
-  Provider,
-  ModuleMetadata,
-} from '@nestjs/common';
+import { DynamicModule, Module, ModuleMetadata, Provider } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { DicoshotOptions, DicoshotClientImpl, FilterOptions, InterceptorOptions } from 'dicoshot-core';
-import { DICOSHOT_OPTIONS, DICOSHOT_CLIENT } from './dicoshot.constants';
+
+import {
+  DicoshotClientImpl,
+  DicoshotOptions,
+  FilterOptions,
+  InterceptorOptions,
+} from 'dicoshot-core';
+
+import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from './dicoshot.constants';
 import { DicoshotListener } from './dicoshot.listener';
 import { DicoshotService } from './dicoshot.service';
 import { DicoshotExceptionFilter } from './filters/dicoshot-exception.filter';
 import { DicoshotInterceptor } from './interceptors/dicoshot.interceptor';
 
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
-  useFactory: (
-    ...args: unknown[]
-  ) => Promise<DicoshotOptions> | DicoshotOptions;
+  useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;
   inject?: unknown[];
   /**
    * Set at registration time so APP_FILTER is conditionally added.

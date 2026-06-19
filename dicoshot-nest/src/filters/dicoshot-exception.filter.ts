@@ -6,9 +6,12 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
-import type { DicoshotOptions, FilterOptions, DiscordEmbed } from 'dicoshot-core';
+
+import type { DicoshotOptions, DiscordEmbed, FilterOptions } from 'dicoshot-core';
 import { DicoshotClientImpl } from 'dicoshot-core';
+
+import { Request, Response } from 'express';
+
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
 import { ThrottleUtil } from '../utils/throttle.util';
 
@@ -31,8 +34,7 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status =
-      exception instanceof HttpException ? exception.getStatus() : 500;
+    const status = exception instanceof HttpException ? exception.getStatus() : 500;
 
     if (this.options.filter) {
       const opts = this.resolveOptions();

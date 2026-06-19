@@ -1,6 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+
 import type { DiscordMessage } from 'dicoshot-core';
 import { DicoshotClientImpl } from 'dicoshot-core';
+
 import { DICOSHOT_CLIENT } from './dicoshot.constants';
 
 export type ColorPreset = 'success' | 'danger' | 'warning' | 'info';
@@ -20,9 +22,7 @@ const COLOR_MAP: Record<ColorPreset, number> = {
 
 @Injectable()
 export class DicoshotService {
-  constructor(
-    @Inject(DICOSHOT_CLIENT) private readonly client: DicoshotClientImpl,
-  ) {}
+  constructor(@Inject(DICOSHOT_CLIENT) private readonly client: DicoshotClientImpl) {}
 
   async send(message: DiscordMessage): Promise<void> {
     await this.client.send(message);
