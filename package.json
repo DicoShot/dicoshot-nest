@@ -9,20 +9,13 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "check-types": "turbo run check-types",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@eslint/js": "^9.18.0",
-    "eslint": "^9.18.0",
-    "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
-    "globals": "^17.0.0",
     "prettier": "^3.4.2",
-    "turbo": "^2.9.0",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "turbo": "^2.9.0"
   }
 }
