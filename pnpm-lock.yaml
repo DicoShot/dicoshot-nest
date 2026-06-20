@@ -26,6 +26,9 @@ importers:
       turbo:
         specifier: ^2.9.0
         version: 2.9.18
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
 
   packages/core:
     dependencies:
