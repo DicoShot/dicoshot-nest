@@ -22,7 +22,7 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "dicoshot-core": ["../dicoshot-core/src/index.ts"]
+      "dicoshot-core": ["../core/src/index.ts"]
     }
   }
 }
