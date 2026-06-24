@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 
 import type { DicoshotOptions, DiscordEmbed, FilterOptions } from 'dicoshot-core';
-import { DicoshotClientImpl } from 'dicoshot-core';
+import { DicoshotClientImpl, getMessages } from 'dicoshot-core';
 
 import { Request, Response } from 'express';
 
@@ -102,25 +102,26 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
     const errorMessage = exception instanceof Error ? exception.message : String(exception);
     const stack = exception instanceof Error ? exception.stack : undefined;
     const now = new Date().toISOString();
+    const msg = getMessages(this.options.locale);
 
     const fields = [
-      { name: 'Service', value: appName, inline: true },
-      { name: 'Environment', value: env, inline: true },
-      { name: 'Status', value: String(status), inline: true },
-      { name: 'Method', value: request.method, inline: true },
-      { name: 'Path', value: request.path, inline: true },
+      { name: msg.field.service, value: appName, inline: true },
+      { name: msg.field.environment, value: env, inline: true },
+      { name: msg.field.status, value: String(status), inline: true },
+      { name: msg.field.method, value: request.method, inline: true },
+      { name: msg.field.path, value: request.path, inline: true },
     ];
 
     const location = StackUtil.extractLocation(stack);
     if (location) {
-      fields.push({ name: 'Location', value: `\`${location}\``, inline: false });
+      fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
     }
 
     if (opts.includeRequest !== false) {
       const body = (request as Request & { body?: unknown }).body;
       if (body && typeof body === 'object' && Object.keys(body).length > 0) {
         fields.push({
-          name: 'Request Body',
+          name: msg.field.requestBody,
           value: `\`\`\`json\n${JSON.stringify(body).slice(0, 900)}\n\`\`\``,
           inline: false,
         });
@@ -129,7 +130,7 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
 
     if (opts.includeStack !== false && stack) {
       fields.push({
-        name: 'Stack Trace',
+        name: msg.field.stackTrace,
         value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
         inline: false,
       });

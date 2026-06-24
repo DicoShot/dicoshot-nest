@@ -1,5 +1,7 @@
 export type { DicoshotClient } from './client/dicoshot.client';
 export { DicoshotClientImpl } from './client/dicoshot.client.impl';
+export type { DicoshotMessages, Locale } from './i18n/messages';
+export { getMessages } from './i18n/messages';
 export type { DiscordEmbed, DiscordField, DiscordMessage } from './message/discord.message';
 export { MessageFactory } from './message/message.factory';
 export type {

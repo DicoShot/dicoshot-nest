@@ -14,6 +14,7 @@ An SDK that automatically notifies a Discord channel about NestJS application st
 - **MSA-friendly**: hostname and applicationName are automatically included in messages, making it easy to tell instances apart
 - **Automatic environment detection**: `NODE_ENV` and `npm_package_version` are included automatically
 - **Duplicate notification prevention**: The same error won't be notified twice even when filter and interceptor are both enabled
+- **Localized notifications**: Titles and field labels (Service, Environment, Status, Location, ...) can be sent in English, Korean, Japanese, or Chinese via `locale` — or any other language by passing your own translations
 
 ## Module structure
 
@@ -258,6 +259,7 @@ If all retries fail, the final error is propagated to the caller. `DicoshotListe
 | `notifyOnStartup`  | `true`       | Whether to send a startup notification                                                 |
 | `notifyOnShutdown` | `true`       | Whether to send a shutdown notification                                                |
 | `applicationName`  | -            | Service name shown in the embed                                                        |
+| `locale`           | `'en'`       | Language for notification titles/field labels: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, or a custom [`DicoshotMessages`](#example-custom-locale) object |
 | `timeoutMs`        | `5000`       | HTTP timeout (ms)                                                                       |
 | `webhooks.error`   | -            | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)         |
 | `webhooks.slow`    | -            | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)     |
@@ -272,6 +274,51 @@ DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   notifyOnShutdown: false,
   applicationName: 'order-service',
+});
+```
+
+### Example: notifications in another language
+
+```typescript
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  applicationName: '주문-서비스',
+  locale: 'ko', // 'en' | 'ko' | 'ja' | 'zh'
+});
+```
+
+Titles and field labels (Service, Environment, Status, Location, ...) are translated. Values that come from your runtime — the exception class name (`TypeError`, `NotFoundException`, ...), the error message, the stack trace, the request path — are sent as-is and aren't translated.
+
+### Example: custom locale
+
+Not all of your team's users speak one of the built-in languages? Pass a full `DicoshotMessages` object instead of a locale code and every title/field label is taken from it.
+
+```typescript
+import { DicoshotMessages } from 'dicoshot-nest';
+
+const fr: DicoshotMessages = {
+  startupTitle: '🟢 Application démarrée',
+  shutdownTitle: '🔴 Application arrêtée',
+  slowResponseLabel: 'Réponse lente',
+  field: {
+    service: 'Service',
+    environment: 'Environnement',
+    version: 'Version',
+    hostname: 'Hôte',
+    time: 'Heure',
+    status: 'Statut',
+    method: 'Méthode',
+    path: 'Chemin',
+    duration: 'Durée',
+    location: 'Emplacement',
+    stackTrace: 'Pile d\'appels',
+    requestBody: 'Corps de la requête',
+  },
+};
+
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  locale: fr,
 });
 ```
 

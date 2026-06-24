@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 
 import type { DicoshotOptions, DiscordEmbed, InterceptorOptions } from 'dicoshot-core';
-import { DicoshotClientImpl } from 'dicoshot-core';
+import { DicoshotClientImpl, getMessages } from 'dicoshot-core';
 
 import { Request } from 'express';
 import { Observable, throwError } from 'rxjs';
@@ -85,16 +85,17 @@ export class DicoshotInterceptor implements NestInterceptor {
     const env = process.env.NODE_ENV ?? 'development';
     const appName = this.options.applicationName ?? 'Unknown';
     const now = new Date().toISOString();
+    const msg = getMessages(this.options.locale);
 
     const embed: DiscordEmbed = {
-      title: `🐢 [${env}] ${appName} — Slow Response`,
+      title: `🐢 [${env}] ${appName} — ${msg.slowResponseLabel}`,
       color: SLOW_COLOR,
       fields: [
-        { name: 'Service', value: appName, inline: true },
-        { name: 'Environment', value: env, inline: true },
-        { name: 'Method', value: request.method, inline: true },
-        { name: 'Path', value: request.path, inline: true },
-        { name: 'Duration', value: `${duration}ms`, inline: true },
+        { name: msg.field.service, value: appName, inline: true },
+        { name: msg.field.environment, value: env, inline: true },
+        { name: msg.field.method, value: request.method, inline: true },
+        { name: msg.field.path, value: request.path, inline: true },
+        { name: msg.field.duration, value: `${duration}ms`, inline: true },
       ],
       timestamp: now,
     };
@@ -115,23 +116,24 @@ export class DicoshotInterceptor implements NestInterceptor {
     const errorMessage = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     const now = new Date().toISOString();
+    const msg = getMessages(this.options.locale);
 
     const fields = [
-      { name: 'Service', value: appName, inline: true },
-      { name: 'Environment', value: env, inline: true },
-      { name: 'Method', value: request.method, inline: true },
-      { name: 'Path', value: request.path, inline: true },
-      { name: 'Duration', value: `${duration}ms`, inline: true },
+      { name: msg.field.service, value: appName, inline: true },
+      { name: msg.field.environment, value: env, inline: true },
+      { name: msg.field.method, value: request.method, inline: true },
+      { name: msg.field.path, value: request.path, inline: true },
+      { name: msg.field.duration, value: `${duration}ms`, inline: true },
     ];
 
     const location = StackUtil.extractLocation(stack);
     if (location) {
-      fields.push({ name: 'Location', value: `\`${location}\``, inline: false });
+      fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
     }
 
     if (stack) {
       fields.push({
-        name: 'Stack Trace',
+        name: msg.field.stackTrace,
         value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
         inline: false,
       });

@@ -1,3 +1,5 @@
+import { DicoshotMessages, Locale } from '../i18n/messages';
+
 export interface FilterOptions {
   ignore?: number[];
   environment?: string | string[];
@@ -31,6 +33,12 @@ export interface DicoshotOptions {
   notifyOnStartup?: boolean;
   notifyOnShutdown?: boolean;
   applicationName?: string;
+  /**
+   * Language for notification titles/field labels. Defaults to 'en'.
+   * Built-in: 'en' | 'ko' | 'ja' | 'zh'. For any other language, pass a
+   * full DicoshotMessages object with your own translations.
+   */
+  locale?: Locale | DicoshotMessages;
   timeoutMs?: number;
   webhooks?: DicoshotWebhooks;
   filter?: boolean | FilterOptions;

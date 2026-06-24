@@ -9,6 +9,7 @@ export { DicoshotExceptionFilter } from './filters/dicoshot-exception.filter';
 export { DicoshotNotifyInterceptor } from './interceptors/dicoshot-notify.interceptor';
 export { DicoshotInterceptor } from './interceptors/dicoshot.interceptor';
 export type {
+  DicoshotMessages,
   DicoshotOptions,
   DicoshotWebhooks,
   DiscordEmbed,
@@ -16,5 +17,6 @@ export type {
   DiscordMessage,
   FilterOptions,
   InterceptorOptions,
+  Locale,
   RetryOptions,
 } from 'dicoshot-core';

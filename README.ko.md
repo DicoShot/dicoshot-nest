@@ -14,6 +14,7 @@ NestJS 애플리케이션의 시작/종료, 예외 발생, 느린 응답을 Disc
 - **MSA 친화**: hostname과 applicationName이 메시지에 자동 포함되어 인스턴스 구분 용이
 - **환경 자동 감지**: `NODE_ENV`, `npm_package_version` 자동 포함
 - **중복 알림 방지**: 필터와 인터셉터를 동시에 사용해도 같은 에러가 두 번 알림되지 않음
+- **알림 언어 선택**: `locale` 옵션으로 알림 제목/필드 이름(Service, Environment, Status, Location 등)을 영어·한국어·일본어·중국어로 발송 — 그 외 언어도 직접 번역을 넘겨서 사용 가능
 
 ## 모듈 구성
 
@@ -257,6 +258,7 @@ DicoshotModule.register({
 | `notifyOnStartup`  | `true`     | 시작 알림 발송 여부                                                                     |
 | `notifyOnShutdown` | `true`     | 종료 알림 발송 여부                                                                     |
 | `applicationName`  | -          | embed에 표시될 서비스 이름                                                              |
+| `locale`           | `'en'`     | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체 |
 | `timeoutMs`        | `5000`     | HTTP 타임아웃 (ms)                                                                      |
 | `webhooks.error`   | -          | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                   |
 | `webhooks.slow`    | -          | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                              |
@@ -271,6 +273,51 @@ DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   notifyOnShutdown: false,
   applicationName: 'order-service',
+});
+```
+
+### 예시: 다른 언어로 알림 받기
+
+```typescript
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  applicationName: '주문-서비스',
+  locale: 'ko', // 'en' | 'ko' | 'ja' | 'zh'
+});
+```
+
+제목과 필드 이름(Service, Environment, Status, Location 등)이 번역됩니다. 런타임에서 가져오는 값들 — 예외 클래스 이름(`TypeError`, `NotFoundException` 등), 에러 메시지, 스택 트레이스, 요청 경로 — 은 그대로 전송되며 번역되지 않습니다.
+
+### 예시: 커스텀 언어
+
+팀 사용자들이 내장 언어를 안 쓴다면, locale 코드 대신 `DicoshotMessages` 객체를 통째로 넘기면 모든 제목/필드 이름이 그 객체 값으로 대체됩니다.
+
+```typescript
+import { DicoshotMessages } from 'dicoshot-nest';
+
+const fr: DicoshotMessages = {
+  startupTitle: '🟢 Application démarrée',
+  shutdownTitle: '🔴 Application arrêtée',
+  slowResponseLabel: 'Réponse lente',
+  field: {
+    service: 'Service',
+    environment: 'Environnement',
+    version: 'Version',
+    hostname: 'Hôte',
+    time: 'Heure',
+    status: 'Statut',
+    method: 'Méthode',
+    path: 'Chemin',
+    duration: 'Durée',
+    location: 'Emplacement',
+    stackTrace: "Pile d'appels",
+    requestBody: 'Corps de la requête',
+  },
+};
+
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  locale: fr,
 });
 ```
 
