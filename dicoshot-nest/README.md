@@ -7,9 +7,9 @@ An SDK that automatically notifies a Discord channel about NestJS application st
 ## Features
 
 - **Automatic notifications**: Startup/shutdown notifications via `OnApplicationBootstrap`/`OnApplicationShutdown` hooks, no extra code required
-- **Automatic exception notifications**: A global `ExceptionFilter` immediately sends unhandled exceptions to Discord (can include stack trace and request body)
+- **Automatic exception notifications**: A global `ExceptionFilter` immediately sends unhandled exceptions to Discord (can include stack trace and request body), with the exact throw site (`file:line:col`) surfaced in a dedicated `Location` field
 - **Slow response notifications**: A `NestInterceptor` notifies when response time exceeds a threshold
-- **Custom messages**: Inject `DicoshotService` to send arbitrary Discord messages at any time
+- **Custom messages**: Inject `DicoshotService` to send arbitrary Discord messages at any time, or annotate a handler with `@DicoshotNotify()` to send one automatically on success
 - **Failure isolation**: Webhook delivery failures never block app startup/shutdown/request handling (only a WARN log is emitted)
 - **MSA-friendly**: hostname and applicationName are automatically included in messages, making it easy to tell instances apart
 - **Automatic environment detection**: `NODE_ENV` and `npm_package_version` are included automatically
@@ -86,6 +86,8 @@ export class DeployService {
       title: 'Deploy complete',
       description: `v${version} deployed successfully`,
       color: 'success', // 'success' | 'danger' | 'warning' | 'info'
+      fields: [{ name: 'Version', value: `v${version}`, inline: true }],
+      mention: '<@&123456789012345678>', // appended after the description
     });
   }
 }
@@ -119,11 +121,40 @@ await this.dicoshot.send({
 });
 ```
 
-> Both methods throw on failure. Handle them with try/catch.
+> Neither method throws. Both resolve to a `boolean` indicating whether the message was delivered; failures are logged as a WARN, consistent with the rest of the SDK's failure-isolation behavior.
+
+### `@DicoshotNotify()` — decorator
+
+Annotate a controller (or any Nest-pipeline) handler to send a custom message automatically once it resolves successfully. No `@UseInterceptors()` setup needed — the interceptor is registered globally and is a no-op on handlers without the decorator. Nothing is sent if the handler throws (use `filter`/`interceptor` for error notifications).
+
+```typescript
+@Controller('orders')
+export class OrderController {
+  @Post()
+  @DicoshotNotify({ title: 'New order created', color: 'success' })
+  create(@Body() dto: CreateOrderDto) {
+    return this.orderService.create(dto);
+  }
+
+  @Post(':id/deploy')
+  @DicoshotNotify({
+    title: (args) => `Deploy complete: ${args[0]}`, // args = handler arguments, in order
+    description: (_args, result) => `Result: ${JSON.stringify(result)}`,
+    color: 'success',
+  })
+  deploy(@Param('id') id: string) {
+    return this.orderService.deploy(id);
+  }
+}
+```
+
+`title`/`description` accept either a static string or a `(args, result) => string` function, where `args` is the handler's argument array and `result` is its return value.
 
 ## Automatic exception notifications (`filter`)
 
-Enabling the `filter` option registers `DicoshotExceptionFilter` as a global `APP_FILTER`, sending every unhandled exception to Discord. Non-HTTP contexts (WebSocket, RPC, etc.) are ignored and not notified.
+Enabling the `filter` option registers `DicoshotExceptionFilter` as a global `APP_FILTER`. By default, it notifies Discord for unhandled exceptions and any error with an HTTP status of `500` or above (4xx `HttpException`s like `NotFoundException` are not notified unless `minStatus` is lowered). Non-HTTP contexts (WebSocket, RPC, etc.) are ignored and not notified.
+
+When a stack trace is available, the notification includes a `Location` field with the exact `file:line:col` where the error was thrown — extracted from the top stack frame — so you don't have to scan the full `Stack Trace` block to find it.
 
 ```typescript
 DicoshotModule.register({
@@ -137,6 +168,7 @@ DicoshotModule.register({
 
 | Key              | Default | Description                                                                        |
 | ---------------- | ------- | ------------------------------------------------------------------------------------ |
+| `minStatus`      | `500`   | Only notify for status codes at or above this value (unhandled exceptions are always treated as `500`) |
 | `ignore`         | -       | Array of HTTP status codes to skip notifying (e.g. `[404]`)                        |
 | `environment`    | -       | Only notify in this environment (`string` or `string[]`, based on `NODE_ENV`)       |
 | `mention`        | -       | Mention string to add to the embed body (e.g. `'<@&ROLE_ID>'`)                     |
@@ -160,7 +192,7 @@ Error notifications are sent to `webhooks.error` if configured, otherwise to the
 
 ## Slow response / error notifications (`interceptor`)
 
-Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates).
+Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates) — including the same `Location` and `Stack Trace` fields described above.
 
 ```typescript
 DicoshotModule.register({
@@ -176,6 +208,7 @@ DicoshotModule.register({
 | `slowThreshold` | `3000`  | Threshold (ms) for considering a response slow                       |
 | `excludePaths`  | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`) |
 | `onlyErrors`    | `false` | If `true`, disables slow response notifications and only sends error notifications |
+| `minStatus`     | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
 
 ```typescript
 DicoshotModule.register({
@@ -220,12 +253,11 @@ If all retries fail, the final error is propagated to the caller. `DicoshotListe
 
 | Key                | Default      | Description                                                                             |
 | ------------------ | ------------ | ----------------------------------------------------------------------------------------- |
-| `webhookUrl`       | **(required)** | Discord webhook URL. Auto-disabled if not set                                          |
+| `webhookUrl`       | -            | Discord webhook URL. Auto-disabled if not set                                          |
 | `enabled`          | `true`       | Global enable toggle (applies to startup/shutdown notifications)                       |
 | `notifyOnStartup`  | `true`       | Whether to send a startup notification                                                 |
 | `notifyOnShutdown` | `true`       | Whether to send a shutdown notification                                                |
 | `applicationName`  | -            | Service name shown in the embed                                                        |
-| `username`         | -            | Override for the webhook bot's display name                                            |
 | `timeoutMs`        | `5000`       | HTTP timeout (ms)                                                                       |
 | `webhooks.error`   | -            | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)         |
 | `webhooks.slow`    | -            | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)     |
@@ -240,7 +272,6 @@ DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   notifyOnShutdown: false,
   applicationName: 'order-service',
-  username: 'Dicoshot Bot',
 });
 ```
 
@@ -262,20 +293,21 @@ DicoshotModule.register({
 
 ```typescript
 DicoshotModule.register({
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? '',
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
 });
 ```
 
-If the value is empty, the SDK is automatically disabled, so no errors occur in local development.
+`webhookUrl` is optional — if it's unset or empty, the SDK is automatically disabled, so no errors occur in local development.
 
 ## How it works
 
 1. `DicoshotModule.register()`/`registerAsync()` registers the options in the NestJS DI container.
-2. If the `filter`/`interceptor` options are enabled, they're registered globally as `APP_FILTER`/`APP_INTERCEPTOR` respectively.
+2. `DicoshotNotifyInterceptor` is always registered globally as `APP_INTERCEPTOR`; it's a no-op except on handlers annotated with `@DicoshotNotify()`. If the `filter`/`interceptor` options are enabled, `DicoshotExceptionFilter`/`DicoshotInterceptor` are also registered globally as `APP_FILTER`/`APP_INTERCEPTOR`.
 3. `DicoshotListener` subscribes to NestJS lifecycle hooks and sends startup/shutdown messages at `onApplicationBootstrap()`/`onApplicationShutdown()`.
 4. When an exception occurs during request handling, `DicoshotExceptionFilter` (or `DicoshotInterceptor` if `filter` is disabled) sends an error message.
 5. When response time exceeds `slowThreshold`, `DicoshotInterceptor` sends a slow response message.
-6. Every webhook call swallows its own exceptions and only emits a WARN log on failure, so app behavior is never affected.
+6. When a handler annotated with `@DicoshotNotify()` resolves successfully, `DicoshotNotifyInterceptor` sends the configured custom message.
+7. Every webhook call swallows its own exceptions and only emits a WARN log on failure, so app behavior is never affected.
 
 ## MSA environments
 
