@@ -164,6 +164,31 @@ DicoshotModule.register({
 });
 ```
 
+Discord에는 이런 형태로 도착합니다:
+
+> 🚨 **[production] order-service — TypeError**
+> `Cannot read properties of undefined (reading 'id')`
+>
+> **Service** `order-service`  **Environment** `production`  **Status** `500`
+> **Method** `POST`  **Path** `/orders`
+>
+> **Location**
+> `/app/src/order/order.service.ts:42:18`
+>
+> **Request Body**
+> ```json
+> {"productId":"abc123","quantity":2}
+> ```
+>
+> **Stack Trace**
+> ```
+> TypeError: Cannot read properties of undefined (reading 'id')
+>     at OrderService.create (/app/src/order/order.service.ts:42:18)
+>     at OrderController.create (/app/src/order/order.controller.ts:15:30)
+> ```
+
+`Location`은 항상 `Stack Trace`의 맨 첫 줄과 같은 내용입니다 — 전체 스택을 다 안 읽어도 에러가 실제로 어디서 터졌는지 바로 보이도록 따로 빼서 보여주는 필드입니다.
+
 ### FilterOptions
 
 | 키               | 기본값 | 설명                                                           |

@@ -165,6 +165,31 @@ DicoshotModule.register({
 });
 ```
 
+This is what arrives in Discord:
+
+> 🚨 **[production] order-service — TypeError**
+> `Cannot read properties of undefined (reading 'id')`
+>
+> **Service** `order-service`  **Environment** `production`  **Status** `500`
+> **Method** `POST`  **Path** `/orders`
+>
+> **Location**
+> `/app/src/order/order.service.ts:42:18`
+>
+> **Request Body**
+> ```json
+> {"productId":"abc123","quantity":2}
+> ```
+>
+> **Stack Trace**
+> ```
+> TypeError: Cannot read properties of undefined (reading 'id')
+>     at OrderService.create (/app/src/order/order.service.ts:42:18)
+>     at OrderController.create (/app/src/order/order.controller.ts:15:30)
+> ```
+
+`Location` is always the very first line of `Stack Trace` — it's pulled out into its own field so you can see where the error actually happened without scrolling through the rest of the trace.
+
 ### FilterOptions
 
 | Key              | Default | Description                                                                        |
