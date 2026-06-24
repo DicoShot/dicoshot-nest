@@ -5,12 +5,14 @@ export interface FilterOptions {
   throttle?: number;
   includeStack?: boolean;
   includeRequest?: boolean;
+  minStatus?: number;
 }
 
 export interface InterceptorOptions {
   slowThreshold?: number;
   excludePaths?: string[];
   onlyErrors?: boolean;
+  minStatus?: number;
 }
 
 export interface DicoshotWebhooks {
@@ -24,12 +26,11 @@ export interface RetryOptions {
 }
 
 export interface DicoshotOptions {
-  webhookUrl: string;
+  webhookUrl?: string;
   enabled?: boolean;
   notifyOnStartup?: boolean;
   notifyOnShutdown?: boolean;
   applicationName?: string;
-  username?: string;
   timeoutMs?: number;
   webhooks?: DicoshotWebhooks;
   filter?: boolean | FilterOptions;

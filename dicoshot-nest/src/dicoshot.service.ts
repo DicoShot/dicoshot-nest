@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 
-import type { DiscordMessage } from 'dicoshot-core';
+import type { DiscordField, DiscordMessage } from 'dicoshot-core';
 import { DicoshotClientImpl } from 'dicoshot-core';
 
 import { DICOSHOT_CLIENT } from './dicoshot.constants';
@@ -11,6 +11,8 @@ export interface CustomMessageOptions {
   title: string;
   description?: string;
   color?: ColorPreset | number;
+  fields?: DiscordField[];
+  mention?: string;
 }
 
 const COLOR_MAP: Record<ColorPreset, number> = {
@@ -22,18 +24,36 @@ const COLOR_MAP: Record<ColorPreset, number> = {
 
 @Injectable()
 export class DicoshotService {
+  private readonly logger = new Logger(DicoshotService.name);
+
   constructor(@Inject(DICOSHOT_CLIENT) private readonly client: DicoshotClientImpl) {}
 
-  async send(message: DiscordMessage): Promise<void> {
-    await this.client.send(message);
+  /**
+   * Never throws: swallows webhook delivery failures (logged as WARN) and
+   * returns whether the message was sent, consistent with the rest of the SDK.
+   */
+  async send(message: DiscordMessage): Promise<boolean> {
+    try {
+      await this.client.send(message);
+      return true;
+    } catch (err) {
+      this.logger.warn(`Failed to send Discord message: ${(err as Error).message}`);
+      return false;
+    }
   }
 
-  async sendCustom({ title, description, color }: CustomMessageOptions): Promise<void> {
+  async sendCustom({
+    title,
+    description,
+    color,
+    fields,
+    mention,
+  }: CustomMessageOptions): Promise<boolean> {
     const resolvedColor = typeof color === 'string' ? COLOR_MAP[color] : color;
+    const resolvedDescription = [description, mention].filter(Boolean).join('\n') || undefined;
 
-    const message: DiscordMessage = {
-      embeds: [{ title, description, color: resolvedColor }],
-    };
-    await this.client.send(message);
+    return this.send({
+      embeds: [{ title, description: resolvedDescription, color: resolvedColor, fields }],
+    });
   }
 }

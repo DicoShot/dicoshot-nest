@@ -9,7 +9,7 @@ NestJS 애플리케이션의 시작/종료, 예외 발생, 느린 응답을 Disc
 - **자동 알림**: `OnApplicationBootstrap`/`OnApplicationShutdown` 훅으로 별도 코드 없이 시작/종료 알림
 - **예외 자동 알림**: 전역 `ExceptionFilter`로 처리되지 않은 예외를 Discord로 즉시 전송 (스택트레이스, 요청 바디 포함 가능)
 - **느린 응답 알림**: `NestInterceptor`로 응답 시간이 임계값을 초과하면 알림
-- **커스텀 메시지**: `DicoshotService`를 주입받아 임의의 타이밍에 Discord 메시지 직접 발송 가능
+- **커스텀 메시지**: `DicoshotService`를 주입받아 임의의 타이밍에 Discord 메시지 직접 발송, 또는 `@DicoshotNotify()`로 핸들러 성공 시 자동 발송
 - **장애 격리**: webhook 전송 실패가 앱 기동/종료/요청 처리를 막지 않음 (WARN 로그만 출력)
 - **MSA 친화**: hostname과 applicationName이 메시지에 자동 포함되어 인스턴스 구분 용이
 - **환경 자동 감지**: `NODE_ENV`, `npm_package_version` 자동 포함
@@ -85,6 +85,8 @@ export class DeployService {
       title: '배포 완료',
       description: `v${version} 정상 배포`,
       color: 'success', // 'success' | 'danger' | 'warning' | 'info'
+      fields: [{ name: '버전', value: `v${version}`, inline: true }],
+      mention: '<@&123456789012345678>', // description 뒤에 덧붙여짐
     });
   }
 }
@@ -118,11 +120,38 @@ await this.dicoshot.send({
 });
 ```
 
-> 두 메서드 모두 실패 시 에러를 throw합니다. try/catch로 처리하세요.
+> 두 메서드 모두 에러를 throw하지 않습니다. 전송 성공 여부를 나타내는 `boolean`을 반환하며, 실패 시에는 SDK의 다른 부분과 동일하게 WARN 로그만 남깁니다.
+
+### `@DicoshotNotify()` — 데코레이터
+
+컨트롤러(또는 Nest 파이프라인을 거치는 모든 핸들러)에 데코레이터를 붙이면, 해당 핸들러가 성공적으로 끝났을 때 커스텀 메시지를 자동으로 전송합니다. `@UseInterceptors()`를 따로 설정할 필요 없이, 인터셉터가 전역으로 등록되어 데코레이터가 없는 핸들러에서는 아무 동작도 하지 않습니다. 핸들러가 예외를 던지면 메시지를 보내지 않습니다(에러 알림은 `filter`/`interceptor`를 사용하세요).
+
+```typescript
+@Controller('orders')
+export class OrderController {
+  @Post()
+  @DicoshotNotify({ title: '새 주문 생성', color: 'success' })
+  create(@Body() dto: CreateOrderDto) {
+    return this.orderService.create(dto);
+  }
+
+  @Post(':id/deploy')
+  @DicoshotNotify({
+    title: (args) => `배포 완료: ${args[0]}`, // args = 핸들러 인자 배열, 순서대로
+    description: (_args, result) => `결과: ${JSON.stringify(result)}`,
+    color: 'success',
+  })
+  deploy(@Param('id') id: string) {
+    return this.orderService.deploy(id);
+  }
+}
+```
+
+`title`/`description`은 고정 문자열 또는 `(args, result) => string` 형태의 함수를 받을 수 있습니다. `args`는 핸들러의 인자 배열, `result`는 반환값입니다.
 
 ## 예외 자동 알림 (`filter`)
 
-`filter` 옵션을 켜면 `DicoshotExceptionFilter`가 전역 `APP_FILTER`로 등록되어, 처리되지 않은 모든 예외를 Discord로 전송합니다. HTTP 컨텍스트가 아닌 경우(WebSocket, RPC 등)는 알림하지 않고 무시합니다.
+`filter` 옵션을 켜면 `DicoshotExceptionFilter`가 전역 `APP_FILTER`로 등록됩니다. 기본적으로 처리되지 않은 예외와 HTTP status `500` 이상인 에러만 Discord로 전송합니다(`NotFoundException` 같은 4xx `HttpException`은 `minStatus`를 낮추지 않으면 알림하지 않습니다). HTTP 컨텍스트가 아닌 경우(WebSocket, RPC 등)는 알림하지 않고 무시합니다.
 
 ```typescript
 DicoshotModule.register({
@@ -136,6 +165,7 @@ DicoshotModule.register({
 
 | 키               | 기본값 | 설명                                                           |
 | ---------------- | ------ | -------------------------------------------------------------- |
+| `minStatus`      | `500`  | 이 값 이상인 status 코드만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
 | `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)              |
 | `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준) |
 | `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)          |
@@ -175,6 +205,7 @@ DicoshotModule.register({
 | `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                  |
 | `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`) |
 | `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행    |
+| `minStatus`     | `500`   | 이 값 이상인 status의 에러만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
 
 ```typescript
 DicoshotModule.register({
@@ -219,12 +250,11 @@ DicoshotModule.register({
 
 | 키                 | 기본값     | 설명                                                                                    |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------- |
-| `webhookUrl`       | **(필수)** | Discord Webhook URL. 미설정 시 자동 비활성화                                            |
+| `webhookUrl`       | -          | Discord Webhook URL. 미설정 시 자동 비활성화                                            |
 | `enabled`          | `true`     | 전체 활성화 토글 (시작/종료 알림에 적용)                                                |
 | `notifyOnStartup`  | `true`     | 시작 알림 발송 여부                                                                     |
 | `notifyOnShutdown` | `true`     | 종료 알림 발송 여부                                                                     |
 | `applicationName`  | -          | embed에 표시될 서비스 이름                                                              |
-| `username`         | -          | webhook bot의 표시 이름 override                                                        |
 | `timeoutMs`        | `5000`     | HTTP 타임아웃 (ms)                                                                      |
 | `webhooks.error`   | -          | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                   |
 | `webhooks.slow`    | -          | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                              |
@@ -239,7 +269,6 @@ DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   notifyOnShutdown: false,
   applicationName: 'order-service',
-  username: 'Dicoshot Bot',
 });
 ```
 
@@ -261,20 +290,21 @@ DicoshotModule.register({
 
 ```typescript
 DicoshotModule.register({
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? '',
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
 });
 ```
 
-값이 비어있으면 자동으로 비활성화되어 로컬 개발 환경에서 오류가 발생하지 않습니다.
+`webhookUrl`은 선택값입니다 — 비어있거나 설정하지 않으면 자동으로 비활성화되어 로컬 개발 환경에서 오류가 발생하지 않습니다.
 
 ## 동작 방식
 
 1. `DicoshotModule.register()`/`registerAsync()`로 옵션을 NestJS DI 컨테이너에 등록합니다.
-2. `filter`/`interceptor` 옵션이 켜져 있으면 각각 `APP_FILTER`/`APP_INTERCEPTOR`로 전역 등록됩니다.
+2. `DicoshotNotifyInterceptor`는 항상 `APP_INTERCEPTOR`로 전역 등록되며, `@DicoshotNotify()`가 붙은 핸들러가 아니면 아무 동작도 하지 않습니다. `filter`/`interceptor` 옵션이 켜져 있으면 `DicoshotExceptionFilter`/`DicoshotInterceptor`도 각각 `APP_FILTER`/`APP_INTERCEPTOR`로 전역 등록됩니다.
 3. `DicoshotListener`가 NestJS 라이프사이클 훅을 구독해 `onApplicationBootstrap()`/`onApplicationShutdown()` 시점에 시작/종료 메시지를 발송합니다.
 4. 요청 처리 중 예외가 발생하면 `DicoshotExceptionFilter`(또는 `filter`가 꺼져 있을 때는 `DicoshotInterceptor`)가 에러 메시지를 발송합니다.
 5. 응답 시간이 `slowThreshold`를 초과하면 `DicoshotInterceptor`가 느린 응답 메시지를 발송합니다.
-6. 모든 webhook 호출은 실패해도 예외를 삼키고 WARN 로그만 남기므로 앱 동작에 영향을 주지 않습니다.
+6. `@DicoshotNotify()`가 붙은 핸들러가 성공적으로 끝나면 `DicoshotNotifyInterceptor`가 설정된 커스텀 메시지를 발송합니다.
+7. 모든 webhook 호출은 실패해도 예외를 삼키고 WARN 로그만 남기므로 앱 동작에 영향을 주지 않습니다.
 
 ## MSA 환경
 

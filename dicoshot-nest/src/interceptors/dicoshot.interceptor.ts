@@ -1,6 +1,7 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Inject,
   Injectable,
   Logger,
@@ -54,10 +55,13 @@ export class DicoshotInterceptor implements NestInterceptor {
       catchError((err: unknown) => {
         // 에러 알림은 filter가 없을 때만 인터셉터에서 처리 (중복 방지)
         if (!this.options.filter) {
-          const duration = Date.now() - start;
-          this.notifyError(request, err, duration).catch((e: Error) =>
-            this.logger.warn(`Failed to send error notification: ${e.message}`),
-          );
+          const status = err instanceof HttpException ? err.getStatus() : 500;
+          if (status >= (opts.minStatus ?? 500)) {
+            const duration = Date.now() - start;
+            this.notifyError(request, err, duration).catch((e: Error) =>
+              this.logger.warn(`Failed to send error notification: ${e.message}`),
+            );
+          }
         }
         return throwError(() => err);
       }),
@@ -94,10 +98,7 @@ export class DicoshotInterceptor implements NestInterceptor {
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, {
-      username: this.options.username,
-      embeds: [embed],
-    });
+    await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 
   private async notifyError(request: Request, err: unknown, duration: number): Promise<void> {
@@ -127,9 +128,6 @@ export class DicoshotInterceptor implements NestInterceptor {
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, {
-      username: this.options.username,
-      embeds: [embed],
-    });
+    await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 }

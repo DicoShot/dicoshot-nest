@@ -65,6 +65,8 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
     status: number,
     opts: FilterOptions,
   ): boolean {
+    if (status < (opts.minStatus ?? 500)) return false;
+
     if (opts.ignore?.includes(status)) return false;
 
     if (opts.environment) {
@@ -137,6 +139,6 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, { username: this.options.username, embeds: [embed] });
+    await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 }

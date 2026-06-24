@@ -21,15 +21,17 @@ describe('DicoshotService', () => {
   });
 
   describe('send()', () => {
-    it('client.send()를 그대로 호출한다', async () => {
+    it('client.send()를 그대로 호출하고 성공 시 true를 반환한다', async () => {
       const message = { embeds: [{ title: '테스트' }] };
-      await service.send(message);
+      const result = await service.send(message);
       expect(mockClient.send).toHaveBeenCalledWith(message);
+      expect(result).toBe(true);
     });
 
-    it('client.send() 실패 시 에러를 throw한다', async () => {
+    it('client.send() 실패 시 throw하지 않고 false를 반환한다', async () => {
       mockClient.send.mockRejectedValueOnce(new Error('network error'));
-      await expect(service.send({ embeds: [] })).rejects.toThrow('network error');
+      const result = await service.send({ embeds: [] });
+      expect(result).toBe(false);
     });
   });
 
@@ -37,7 +39,7 @@ describe('DicoshotService', () => {
     it('title과 description으로 embed를 구성해 전송한다', async () => {
       await service.sendCustom({ title: '배포 완료', description: 'v1.0.0' });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '배포 완료', description: 'v1.0.0', color: undefined }],
+        embeds: [{ title: '배포 완료', description: 'v1.0.0', color: undefined, fields: undefined }],
       });
     });
 
@@ -49,20 +51,43 @@ describe('DicoshotService', () => {
     ] as const)("color '%s' → hex %i 로 변환한다", async (preset, hex) => {
       await service.sendCustom({ title: '테스트', color: preset });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '테스트', description: undefined, color: hex }],
+        embeds: [{ title: '테스트', description: undefined, color: hex, fields: undefined }],
       });
     });
 
     it('color가 number이면 그대로 전달한다', async () => {
       await service.sendCustom({ title: '테스트', color: 0xff0000 });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '테스트', description: undefined, color: 0xff0000 }],
+        embeds: [{ title: '테스트', description: undefined, color: 0xff0000, fields: undefined }],
       });
     });
 
-    it('client.send() 실패 시 에러를 throw한다', async () => {
+    it('fields를 그대로 embed에 전달한다', async () => {
+      const fields = [{ name: 'Version', value: 'v1.2.3', inline: true }];
+      await service.sendCustom({ title: '테스트', fields });
+      expect(mockClient.send).toHaveBeenCalledWith({
+        embeds: [{ title: '테스트', description: undefined, color: undefined, fields }],
+      });
+    });
+
+    it('mention을 description 뒤에 덧붙인다', async () => {
+      await service.sendCustom({ title: '테스트', description: '본문', mention: '<@&123>' });
+      expect(mockClient.send).toHaveBeenCalledWith({
+        embeds: [{ title: '테스트', description: '본문\n<@&123>', color: undefined, fields: undefined }],
+      });
+    });
+
+    it('description 없이 mention만 있으면 mention만 description으로 사용한다', async () => {
+      await service.sendCustom({ title: '테스트', mention: '<@&123>' });
+      expect(mockClient.send).toHaveBeenCalledWith({
+        embeds: [{ title: '테스트', description: '<@&123>', color: undefined, fields: undefined }],
+      });
+    });
+
+    it('client.send() 실패 시 throw하지 않고 false를 반환한다', async () => {
       mockClient.send.mockRejectedValueOnce(new Error('timeout'));
-      await expect(service.sendCustom({ title: '테스트' })).rejects.toThrow('timeout');
+      const result = await service.sendCustom({ title: '테스트' });
+      expect(result).toBe(false);
     });
   });
 });

@@ -18,7 +18,6 @@ export class MessageFactory {
   startup(): DiscordMessage {
     const now = new Date().toISOString();
     return {
-      username: this.options.username,
       embeds: [
         {
           title: '🟢 Application Started',
@@ -39,7 +38,6 @@ export class MessageFactory {
   shutdown(): DiscordMessage {
     const now = new Date().toISOString();
     return {
-      username: this.options.username,
       embeds: [
         {
           title: '🔴 Application Stopped',
