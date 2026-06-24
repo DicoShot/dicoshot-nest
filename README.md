@@ -7,7 +7,7 @@ An SDK that automatically notifies a Discord channel about NestJS application st
 ## Features
 
 - **Automatic notifications**: Startup/shutdown notifications via `OnApplicationBootstrap`/`OnApplicationShutdown` hooks, no extra code required
-- **Automatic exception notifications**: A global `ExceptionFilter` immediately sends unhandled exceptions to Discord (can include stack trace and request body)
+- **Automatic exception notifications**: A global `ExceptionFilter` immediately sends unhandled exceptions to Discord (can include stack trace and request body), with the exact throw site (`file:line:col`) surfaced in a dedicated `Location` field
 - **Slow response notifications**: A `NestInterceptor` notifies when response time exceeds a threshold
 - **Custom messages**: Inject `DicoshotService` to send arbitrary Discord messages at any time, or annotate a handler with `@DicoshotNotify()` to send one automatically on success
 - **Failure isolation**: Webhook delivery failures never block app startup/shutdown/request handling (only a WARN log is emitted)
@@ -154,6 +154,8 @@ export class OrderController {
 
 Enabling the `filter` option registers `DicoshotExceptionFilter` as a global `APP_FILTER`. By default, it notifies Discord for unhandled exceptions and any error with an HTTP status of `500` or above (4xx `HttpException`s like `NotFoundException` are not notified unless `minStatus` is lowered). Non-HTTP contexts (WebSocket, RPC, etc.) are ignored and not notified.
 
+When a stack trace is available, the notification includes a `Location` field with the exact `file:line:col` where the error was thrown — extracted from the top stack frame — so you don't have to scan the full `Stack Trace` block to find it.
+
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
@@ -190,7 +192,7 @@ Error notifications are sent to `webhooks.error` if configured, otherwise to the
 
 ## Slow response / error notifications (`interceptor`)
 
-Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates).
+Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates) — including the same `Location` and `Stack Trace` fields described above.
 
 ```typescript
 DicoshotModule.register({

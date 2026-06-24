@@ -7,7 +7,7 @@ NestJS 애플리케이션의 시작/종료, 예외 발생, 느린 응답을 Disc
 ## 특징
 
 - **자동 알림**: `OnApplicationBootstrap`/`OnApplicationShutdown` 훅으로 별도 코드 없이 시작/종료 알림
-- **예외 자동 알림**: 전역 `ExceptionFilter`로 처리되지 않은 예외를 Discord로 즉시 전송 (스택트레이스, 요청 바디 포함 가능)
+- **예외 자동 알림**: 전역 `ExceptionFilter`로 처리되지 않은 예외를 Discord로 즉시 전송 (스택트레이스, 요청 바디 포함 가능), 에러가 발생한 정확한 위치(`file:line:col`)를 별도의 `Location` 필드로 표시
 - **느린 응답 알림**: `NestInterceptor`로 응답 시간이 임계값을 초과하면 알림
 - **커스텀 메시지**: `DicoshotService`를 주입받아 임의의 타이밍에 Discord 메시지 직접 발송, 또는 `@DicoshotNotify()`로 핸들러 성공 시 자동 발송
 - **장애 격리**: webhook 전송 실패가 앱 기동/종료/요청 처리를 막지 않음 (WARN 로그만 출력)
@@ -153,6 +153,8 @@ export class OrderController {
 
 `filter` 옵션을 켜면 `DicoshotExceptionFilter`가 전역 `APP_FILTER`로 등록됩니다. 기본적으로 처리되지 않은 예외와 HTTP status `500` 이상인 에러만 Discord로 전송합니다(`NotFoundException` 같은 4xx `HttpException`은 `minStatus`를 낮추지 않으면 알림하지 않습니다). HTTP 컨텍스트가 아닌 경우(WebSocket, RPC 등)는 알림하지 않고 무시합니다.
 
+스택트레이스를 사용할 수 있는 경우, 에러가 실제로 던져진 `file:line:col`을 스택의 맨 위 프레임에서 뽑아 `Location` 필드로 따로 보여줍니다 — 전체 `Stack Trace` 블록을 다 읽지 않아도 바로 위치를 확인할 수 있습니다.
+
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
@@ -189,7 +191,7 @@ DicoshotModule.register({
 
 ## 느린 응답 / 에러 알림 (`interceptor`)
 
-`interceptor` 옵션을 켜면 `DicoshotInterceptor`가 전역 `APP_INTERCEPTOR`로 등록되어, 응답 시간이 임계값을 초과하면 Discord로 알림합니다. `filter`가 켜져 있지 않은 경우에는 에러 알림도 인터셉터가 함께 처리합니다(필터가 켜져 있으면 중복 알림을 막기 위해 인터셉터는 에러 알림을 보내지 않습니다).
+`interceptor` 옵션을 켜면 `DicoshotInterceptor`가 전역 `APP_INTERCEPTOR`로 등록되어, 응답 시간이 임계값을 초과하면 Discord로 알림합니다. `filter`가 켜져 있지 않은 경우에는 에러 알림도 인터셉터가 함께 처리합니다(필터가 켜져 있으면 중복 알림을 막기 위해 인터셉터는 에러 알림을 보내지 않습니다) — 이때도 위에서 설명한 `Location`, `Stack Trace` 필드가 동일하게 포함됩니다.
 
 ```typescript
 DicoshotModule.register({
