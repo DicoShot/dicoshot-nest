@@ -16,6 +16,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
+import { StackUtil } from '../utils/stack.util';
 
 const SLOW_COLOR = 0xfee75c;
 const ERROR_COLOR = 0xed4245;
@@ -112,19 +113,35 @@ export class DicoshotInterceptor implements NestInterceptor {
     const appName = this.options.applicationName ?? 'Unknown';
     const errorName = err instanceof Error ? err.constructor.name : 'UnknownError';
     const errorMessage = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
     const now = new Date().toISOString();
+
+    const fields = [
+      { name: 'Service', value: appName, inline: true },
+      { name: 'Environment', value: env, inline: true },
+      { name: 'Method', value: request.method, inline: true },
+      { name: 'Path', value: request.path, inline: true },
+      { name: 'Duration', value: `${duration}ms`, inline: true },
+    ];
+
+    const location = StackUtil.extractLocation(stack);
+    if (location) {
+      fields.push({ name: 'Location', value: `\`${location}\``, inline: false });
+    }
+
+    if (stack) {
+      fields.push({
+        name: 'Stack Trace',
+        value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
+        inline: false,
+      });
+    }
 
     const embed: DiscordEmbed = {
       title: `🚨 [${env}] ${appName} — ${errorName}`,
       description: `\`${errorMessage}\``,
       color: ERROR_COLOR,
-      fields: [
-        { name: 'Service', value: appName, inline: true },
-        { name: 'Environment', value: env, inline: true },
-        { name: 'Method', value: request.method, inline: true },
-        { name: 'Path', value: request.path, inline: true },
-        { name: 'Duration', value: `${duration}ms`, inline: true },
-      ],
+      fields,
       timestamp: now,
     };
 

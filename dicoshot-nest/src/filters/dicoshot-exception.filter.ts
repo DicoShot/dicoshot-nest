@@ -13,6 +13,7 @@ import { DicoshotClientImpl } from 'dicoshot-core';
 import { Request, Response } from 'express';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
+import { StackUtil } from '../utils/stack.util';
 import { ThrottleUtil } from '../utils/throttle.util';
 
 const ERROR_COLOR = 0xed4245;
@@ -109,6 +110,11 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
       { name: 'Method', value: request.method, inline: true },
       { name: 'Path', value: request.path, inline: true },
     ];
+
+    const location = StackUtil.extractLocation(stack);
+    if (location) {
+      fields.push({ name: 'Location', value: `\`${location}\``, inline: false });
+    }
 
     if (opts.includeRequest !== false) {
       const body = (request as Request & { body?: unknown }).body;
