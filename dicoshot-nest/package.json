@@ -1,6 +1,6 @@
 {
   "name": "dicoshot-nest",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "",
   "author": "",
   "private": false,
@@ -9,7 +9,7 @@
   "files": [
     "dist"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
@@ -23,19 +23,19 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@nestjs/common": "^11.0.1",
-    "@nestjs/core": "^11.0.1",
-    "@nestjs/platform-express": "^11.0.1",
-    "dicoshot-core": "*",
+    "dicoshot-core": "^0.2.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
   "peerDependencies": {
-    "@nestjs/common": "^10",
-    "@nestjs/core": "^10"
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
