@@ -18,10 +18,10 @@ An SDK that automatically notifies a Discord channel about NestJS application st
 
 ## Module structure
 
-| Module          | Description                                                                       |
-| --------------- | ----------------------------------------------------------------------------------- |
-| `dicoshot-core` | Pure TypeScript with no NestJS dependency. Message model, webhook client          |
-| `dicoshot-nest` | NestJS DynamicModule, lifecycle hooks, ExceptionFilter, Interceptor                |
+| Module          | Description                                                              |
+| --------------- | ------------------------------------------------------------------------ |
+| `dicoshot-core` | Pure TypeScript with no NestJS dependency. Message model, webhook client |
+| `dicoshot-nest` | NestJS DynamicModule, lifecycle hooks, ExceptionFilter, Interceptor      |
 
 ## Installation
 
@@ -170,18 +170,20 @@ This is what arrives in Discord:
 > 🚨 **[production] order-service — TypeError**
 > `Cannot read properties of undefined (reading 'id')`
 >
-> **Service** `order-service`  **Environment** `production`  **Status** `500`
-> **Method** `POST`  **Path** `/orders`
+> **Service** `order-service` **Environment** `production` **Status** `500`
+> **Method** `POST` **Path** `/orders`
 >
 > **Location**
 > `/app/src/order/order.service.ts:42:18`
 >
 > **Request Body**
+>
 > ```json
-> {"productId":"abc123","quantity":2}
+> { "productId": "abc123", "quantity": 2 }
 > ```
 >
 > **Stack Trace**
+>
 > ```
 > TypeError: Cannot read properties of undefined (reading 'id')
 >     at OrderService.create (/app/src/order/order.service.ts:42:18)
@@ -192,15 +194,15 @@ This is what arrives in Discord:
 
 ### FilterOptions
 
-| Key              | Default | Description                                                                        |
-| ---------------- | ------- | ------------------------------------------------------------------------------------ |
+| Key              | Default | Description                                                                                            |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
 | `minStatus`      | `500`   | Only notify for status codes at or above this value (unhandled exceptions are always treated as `500`) |
-| `ignore`         | -       | Array of HTTP status codes to skip notifying (e.g. `[404]`)                        |
-| `environment`    | -       | Only notify in this environment (`string` or `string[]`, based on `NODE_ENV`)       |
-| `mention`        | -       | Mention string to add to the embed body (e.g. `'<@&ROLE_ID>'`)                     |
-| `throttle`       | -       | Suppress repeated notifications for the same error (class+method+path) for N seconds |
-| `includeStack`   | `true`  | Whether to include the stack trace                                                  |
-| `includeRequest` | `true`  | Whether to include the request body                                                 |
+| `ignore`         | -       | Array of HTTP status codes to skip notifying (e.g. `[404]`)                                            |
+| `environment`    | -       | Only notify in this environment (`string` or `string[]`, based on `NODE_ENV`)                          |
+| `mention`        | -       | Mention string to add to the embed body (e.g. `'<@&ROLE_ID>'`)                                         |
+| `throttle`       | -       | Suppress repeated notifications for the same error (class+method+path) for N seconds                   |
+| `includeStack`   | `true`  | Whether to include the stack trace                                                                     |
+| `includeRequest` | `true`  | Whether to include the request body                                                                    |
 
 ```typescript
 DicoshotModule.register({
@@ -229,11 +231,11 @@ DicoshotModule.register({
 
 ### InterceptorOptions
 
-| Key             | Default | Description                                                          |
-| --------------- | ------- | ---------------------------------------------------------------------- |
-| `slowThreshold` | `3000`  | Threshold (ms) for considering a response slow                       |
-| `excludePaths`  | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`) |
-| `onlyErrors`    | `false` | If `true`, disables slow response notifications and only sends error notifications |
+| Key             | Default | Description                                                                                            |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `slowThreshold` | `3000`  | Threshold (ms) for considering a response slow                                                         |
+| `excludePaths`  | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`)                                |
+| `onlyErrors`    | `false` | If `true`, disables slow response notifications and only sends error notifications                     |
 | `minStatus`     | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
 
 ```typescript
@@ -261,9 +263,9 @@ DicoshotModule.register({
 
 ### RetryOptions
 
-| Key         | Default | Description                                                        |
-| ----------- | ------- | -------------------------------------------------------------------- |
-| `attempts`  | `2`     | Number of retries after the initial attempt fails                  |
+| Key         | Default | Description                                                               |
+| ----------- | ------- | ------------------------------------------------------------------------- |
+| `attempts`  | `2`     | Number of retries after the initial attempt fails                         |
 | `backoffMs` | `500`   | Wait time (ms) before the first retry. Doubles on each subsequent attempt |
 
 ```typescript
@@ -277,20 +279,20 @@ If all retries fail, the final error is propagated to the caller. `DicoshotListe
 
 ## Configuration
 
-| Key                | Default      | Description                                                                             |
-| ------------------ | ------------ | ----------------------------------------------------------------------------------------- |
-| `webhookUrl`       | -            | Discord webhook URL. Auto-disabled if not set                                          |
-| `enabled`          | `true`       | Global enable toggle (applies to startup/shutdown notifications)                       |
-| `notifyOnStartup`  | `true`       | Whether to send a startup notification                                                 |
-| `notifyOnShutdown` | `true`       | Whether to send a shutdown notification                                                |
-| `applicationName`  | -            | Service name shown in the embed                                                        |
-| `locale`           | `'en'`       | Language for notification titles/field labels: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, or a custom [`DicoshotMessages`](#example-custom-locale) object |
-| `timeoutMs`        | `5000`       | HTTP timeout (ms)                                                                       |
-| `webhooks.error`   | -            | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)         |
-| `webhooks.slow`    | -            | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)     |
-| `filter`           | `false`      | Enable automatic exception notifications (`boolean` or [`FilterOptions`](#filteroptions)) |
-| `interceptor`      | `false`      | Enable slow response/error notifications (`boolean` or [`InterceptorOptions`](#interceptoroptions)) |
-| `retry`            | `false`      | Enable retries on webhook delivery failure (`boolean` or [`RetryOptions`](#retryoptions)) |
+| Key                | Default | Description                                                                                                                                          |
+| ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `webhookUrl`       | -       | Discord webhook URL. Auto-disabled if not set                                                                                                        |
+| `enabled`          | `true`  | Global enable toggle (applies to startup/shutdown notifications)                                                                                     |
+| `notifyOnStartup`  | `true`  | Whether to send a startup notification                                                                                                               |
+| `notifyOnShutdown` | `true`  | Whether to send a shutdown notification                                                                                                              |
+| `applicationName`  | -       | Service name shown in the embed                                                                                                                      |
+| `locale`           | `'en'`  | Language for notification titles/field labels: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, or a custom [`DicoshotMessages`](#example-custom-locale) object |
+| `timeoutMs`        | `5000`  | HTTP timeout (ms)                                                                                                                                    |
+| `webhooks.error`   | -       | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)                                                                       |
+| `webhooks.slow`    | -       | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)                                                                   |
+| `filter`           | `false` | Enable automatic exception notifications (`boolean` or [`FilterOptions`](#filteroptions))                                                            |
+| `interceptor`      | `false` | Enable slow response/error notifications (`boolean` or [`InterceptorOptions`](#interceptoroptions))                                                  |
+| `retry`            | `false` | Enable retries on webhook delivery failure (`boolean` or [`RetryOptions`](#retryoptions))                                                            |
 
 ### Example: notify only on startup
 
@@ -336,7 +338,7 @@ const fr: DicoshotMessages = {
     path: 'Chemin',
     duration: 'Durée',
     location: 'Emplacement',
-    stackTrace: 'Pile d\'appels',
+    stackTrace: "Pile d'appels",
     requestBody: 'Corps de la requête',
   },
 };

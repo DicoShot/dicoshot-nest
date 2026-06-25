@@ -12,8 +12,8 @@ import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from './dicoshot.constants';
 import { DicoshotListener } from './dicoshot.listener';
 import { DicoshotService } from './dicoshot.service';
 import { DicoshotExceptionFilter } from './filters/dicoshot-exception.filter';
-import { DicoshotNotifyInterceptor } from './interceptors/dicoshot-notify.interceptor';
 import { DicoshotInterceptor } from './interceptors/dicoshot.interceptor';
+import { DicoshotNotifyInterceptor } from './interceptors/dicoshot-notify.interceptor';
 
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;

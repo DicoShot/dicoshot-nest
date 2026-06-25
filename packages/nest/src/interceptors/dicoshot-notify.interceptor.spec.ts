@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 import { DicoshotNotifyOptions } from '../decorators/dicoshot-notify.decorator';
 import { DicoshotService } from '../dicoshot.service';
@@ -14,7 +14,7 @@ function createContext(args: unknown[] = []): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function createCallHandler(observable: ReturnType<typeof of>): CallHandler {
+function createCallHandler(observable: Observable<unknown>): CallHandler {
   return { handle: () => observable } as CallHandler;
 }
 
@@ -36,7 +36,7 @@ describe('DicoshotNotifyInterceptor', () => {
     reflector.get.mockReturnValue(undefined);
     const result$ = interceptor.intercept(createContext(), createCallHandler(of('ok')));
 
-    await new Promise((resolve) => result$.subscribe({ complete: resolve }));
+    await new Promise<void>((resolve) => result$.subscribe({ complete: resolve }));
 
     expect(dicoshot.sendCustom).not.toHaveBeenCalled();
   });
@@ -50,7 +50,7 @@ describe('DicoshotNotifyInterceptor', () => {
     reflector.get.mockReturnValue(options);
     const result$ = interceptor.intercept(createContext(), createCallHandler(of('ok')));
 
-    await new Promise((resolve) => result$.subscribe({ complete: resolve }));
+    await new Promise<void>((resolve) => result$.subscribe({ complete: resolve }));
 
     expect(dicoshot.sendCustom).toHaveBeenCalledWith({
       title: '배포 완료',
@@ -61,13 +61,13 @@ describe('DicoshotNotifyInterceptor', () => {
 
   it('title/description이 함수면 args와 result를 받아 동적으로 계산한다', async () => {
     const options: DicoshotNotifyOptions = {
-      title: (args) => `배포 완료: ${args[0]}`,
-      description: (_args, result) => `결과: ${result}`,
+      title: (args) => `배포 완료: ${String(args[0])}`,
+      description: (_args, result) => `결과: ${String(result)}`,
     };
     reflector.get.mockReturnValue(options);
     const result$ = interceptor.intercept(createContext(['v1.0.0']), createCallHandler(of('ok')));
 
-    await new Promise((resolve) => result$.subscribe({ complete: resolve }));
+    await new Promise<void>((resolve) => result$.subscribe({ complete: resolve }));
 
     expect(dicoshot.sendCustom).toHaveBeenCalledWith({
       title: '배포 완료: v1.0.0',

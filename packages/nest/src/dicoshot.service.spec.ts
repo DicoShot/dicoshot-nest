@@ -39,7 +39,9 @@ describe('DicoshotService', () => {
     it('title과 description으로 embed를 구성해 전송한다', async () => {
       await service.sendCustom({ title: '배포 완료', description: 'v1.0.0' });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '배포 완료', description: 'v1.0.0', color: undefined, fields: undefined }],
+        embeds: [
+          { title: '배포 완료', description: 'v1.0.0', color: undefined, fields: undefined },
+        ],
       });
     });
 
@@ -73,7 +75,9 @@ describe('DicoshotService', () => {
     it('mention을 description 뒤에 덧붙인다', async () => {
       await service.sendCustom({ title: '테스트', description: '본문', mention: '<@&123>' });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '테스트', description: '본문\n<@&123>', color: undefined, fields: undefined }],
+        embeds: [
+          { title: '테스트', description: '본문\n<@&123>', color: undefined, fields: undefined },
+        ],
       });
     });
 

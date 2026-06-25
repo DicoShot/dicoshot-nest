@@ -27,7 +27,8 @@ export class DicoshotNotifyInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap((result) => {
-        const title = typeof options.title === 'function' ? options.title(args, result) : options.title;
+        const title =
+          typeof options.title === 'function' ? options.title(args, result) : options.title;
         const description =
           typeof options.description === 'function'
             ? options.description(args, result)

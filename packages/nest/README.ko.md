@@ -169,18 +169,20 @@ Discord에는 이런 형태로 도착합니다:
 > 🚨 **[production] order-service — TypeError**
 > `Cannot read properties of undefined (reading 'id')`
 >
-> **Service** `order-service`  **Environment** `production`  **Status** `500`
-> **Method** `POST`  **Path** `/orders`
+> **Service** `order-service` **Environment** `production` **Status** `500`
+> **Method** `POST` **Path** `/orders`
 >
 > **Location**
 > `/app/src/order/order.service.ts:42:18`
 >
 > **Request Body**
+>
 > ```json
-> {"productId":"abc123","quantity":2}
+> { "productId": "abc123", "quantity": 2 }
 > ```
 >
 > **Stack Trace**
+>
 > ```
 > TypeError: Cannot read properties of undefined (reading 'id')
 >     at OrderService.create (/app/src/order/order.service.ts:42:18)
@@ -191,15 +193,15 @@ Discord에는 이런 형태로 도착합니다:
 
 ### FilterOptions
 
-| 키               | 기본값 | 설명                                                           |
-| ---------------- | ------ | -------------------------------------------------------------- |
+| 키               | 기본값 | 설명                                                                       |
+| ---------------- | ------ | -------------------------------------------------------------------------- |
 | `minStatus`      | `500`  | 이 값 이상인 status 코드만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
-| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)              |
-| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준) |
-| `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)          |
-| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제        |
-| `includeStack`   | `true` | 스택트레이스 포함 여부                                         |
-| `includeRequest` | `true` | 요청 바디 포함 여부                                            |
+| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)                          |
+| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준)             |
+| `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)                      |
+| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제                    |
+| `includeStack`   | `true` | 스택트레이스 포함 여부                                                     |
+| `includeRequest` | `true` | 요청 바디 포함 여부                                                        |
 
 ```typescript
 DicoshotModule.register({
@@ -228,11 +230,11 @@ DicoshotModule.register({
 
 ### InterceptorOptions
 
-| 키              | 기본값  | 설명                                                 |
-| --------------- | ------- | ---------------------------------------------------- |
-| `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                  |
-| `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`) |
-| `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행    |
+| 키              | 기본값  | 설명                                                                         |
+| --------------- | ------- | ---------------------------------------------------------------------------- |
+| `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                                          |
+| `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`)                         |
+| `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행                            |
 | `minStatus`     | `500`   | 이 값 이상인 status의 에러만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
 
 ```typescript
@@ -276,20 +278,20 @@ DicoshotModule.register({
 
 ## 설정
 
-| 키                 | 기본값     | 설명                                                                                    |
-| ------------------ | ---------- | --------------------------------------------------------------------------------------- |
-| `webhookUrl`       | -          | Discord Webhook URL. 미설정 시 자동 비활성화                                            |
-| `enabled`          | `true`     | 전체 활성화 토글 (시작/종료 알림에 적용)                                                |
-| `notifyOnStartup`  | `true`     | 시작 알림 발송 여부                                                                     |
-| `notifyOnShutdown` | `true`     | 종료 알림 발송 여부                                                                     |
-| `applicationName`  | -          | embed에 표시될 서비스 이름                                                              |
-| `locale`           | `'en'`     | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체 |
-| `timeoutMs`        | `5000`     | HTTP 타임아웃 (ms)                                                                      |
-| `webhooks.error`   | -          | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                   |
-| `webhooks.slow`    | -          | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                              |
-| `filter`           | `false`    | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                |
-| `interceptor`      | `false`    | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions)) |
-| `retry`            | `false`    | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))     |
+| 키                 | 기본값  | 설명                                                                                                                        |
+| ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `webhookUrl`       | -       | Discord Webhook URL. 미설정 시 자동 비활성화                                                                                |
+| `enabled`          | `true`  | 전체 활성화 토글 (시작/종료 알림에 적용)                                                                                    |
+| `notifyOnStartup`  | `true`  | 시작 알림 발송 여부                                                                                                         |
+| `notifyOnShutdown` | `true`  | 종료 알림 발송 여부                                                                                                         |
+| `applicationName`  | -       | embed에 표시될 서비스 이름                                                                                                  |
+| `locale`           | `'en'`  | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체 |
+| `timeoutMs`        | `5000`  | HTTP 타임아웃 (ms)                                                                                                          |
+| `webhooks.error`   | -       | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                       |
+| `webhooks.slow`    | -       | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                  |
+| `filter`           | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                                                    |
+| `interceptor`      | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions))                                     |
+| `retry`            | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))                                         |
 
 ### 예시: 시작 시에만 알림
 

@@ -1,7 +1,7 @@
 import { SetMetadata } from '@nestjs/common';
 
-import type { ColorPreset } from '../dicoshot.service';
 import { DICOSHOT_NOTIFY_METADATA } from '../dicoshot.constants';
+import type { ColorPreset } from '../dicoshot.service';
 
 export type DicoshotNotifyResolver<T> = T | ((args: unknown[], result: unknown) => T);
 
