@@ -13,6 +13,7 @@ import { DicoshotListener } from './dicoshot.listener';
 import { DicoshotService } from './dicoshot.service';
 import { DicoshotExceptionFilter } from './filters/dicoshot-exception.filter';
 import { DicoshotInterceptor } from './interceptors/dicoshot.interceptor';
+import { DicoshotNotifyInterceptor } from './interceptors/dicoshot-notify.interceptor';
 
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;
@@ -41,6 +42,8 @@ function buildProviders(options: DicoshotOptions): Provider[] {
     clientProvider,
     DicoshotListener,
     DicoshotService,
+    // Always registered: no-op unless a handler is annotated with @DicoshotNotify
+    { provide: APP_INTERCEPTOR, useClass: DicoshotNotifyInterceptor },
   ];
 
   if (options.filter) {
@@ -90,6 +93,8 @@ export class DicoshotModule {
       clientProvider,
       DicoshotListener,
       DicoshotService,
+      // Always registered: no-op unless a handler is annotated with @DicoshotNotify
+      { provide: APP_INTERCEPTOR, useClass: DicoshotNotifyInterceptor },
     ];
 
     if (filter) {

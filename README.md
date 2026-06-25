@@ -1,32 +1,35 @@
 # dicoshot-nest
 
-NestJS 애플리케이션의 시작/종료, 예외 발생, 느린 응답을 Discord 채널로 자동 알림하는 SDK입니다. 모듈 등록만으로 동작합니다.
+English | [한국어](README.ko.md)
 
-## 특징
+An SDK that automatically notifies a Discord channel about NestJS application startup/shutdown, unhandled exceptions, and slow responses. Works by simply registering the module.
 
-- **자동 알림**: `OnApplicationBootstrap`/`OnApplicationShutdown` 훅으로 별도 코드 없이 시작/종료 알림
-- **예외 자동 알림**: 전역 `ExceptionFilter`로 처리되지 않은 예외를 Discord로 즉시 전송 (스택트레이스, 요청 바디 포함 가능)
-- **느린 응답 알림**: `NestInterceptor`로 응답 시간이 임계값을 초과하면 알림
-- **커스텀 메시지**: `DicoshotService`를 주입받아 임의의 타이밍에 Discord 메시지 직접 발송 가능
-- **장애 격리**: webhook 전송 실패가 앱 기동/종료/요청 처리를 막지 않음 (WARN 로그만 출력)
-- **MSA 친화**: hostname과 applicationName이 메시지에 자동 포함되어 인스턴스 구분 용이
-- **환경 자동 감지**: `NODE_ENV`, `npm_package_version` 자동 포함
-- **중복 알림 방지**: 필터와 인터셉터를 동시에 사용해도 같은 에러가 두 번 알림되지 않음
+## Features
 
-## 모듈 구성
+- **Automatic notifications**: Startup/shutdown notifications via `OnApplicationBootstrap`/`OnApplicationShutdown` hooks, no extra code required
+- **Automatic exception notifications**: A global `ExceptionFilter` immediately sends unhandled exceptions to Discord (can include stack trace and request body), with the exact throw site (`file:line:col`) surfaced in a dedicated `Location` field
+- **Slow response notifications**: A `NestInterceptor` notifies when response time exceeds a threshold
+- **Custom messages**: Inject `DicoshotService` to send arbitrary Discord messages at any time, or annotate a handler with `@DicoshotNotify()` to send one automatically on success
+- **Failure isolation**: Webhook delivery failures never block app startup/shutdown/request handling (only a WARN log is emitted)
+- **MSA-friendly**: hostname and applicationName are automatically included in messages, making it easy to tell instances apart
+- **Automatic environment detection**: `NODE_ENV` and `npm_package_version` are included automatically
+- **Duplicate notification prevention**: The same error won't be notified twice even when filter and interceptor are both enabled
+- **Localized notifications**: Titles and field labels (Service, Environment, Status, Location, ...) can be sent in English, Korean, Japanese, or Chinese via `locale` — or any other language by passing your own translations
 
-| 모듈            | 설명                                                                |
-| --------------- | ------------------------------------------------------------------- |
-| `dicoshot-core` | NestJS 의존성 없는 순수 TypeScript. 메시지 모델, Webhook 클라이언트 |
-| `dicoshot-nest` | NestJS DynamicModule, 라이프사이클 훅, ExceptionFilter, Interceptor |
+## Module structure
 
-## 설치
+| Module          | Description                                                              |
+| --------------- | ------------------------------------------------------------------------ |
+| `dicoshot-core` | Pure TypeScript with no NestJS dependency. Message model, webhook client |
+| `dicoshot-nest` | NestJS DynamicModule, lifecycle hooks, ExceptionFilter, Interceptor      |
+
+## Installation
 
 ```bash
 npm install dicoshot-nest
 ```
 
-## 빠른 시작
+## Quick start
 
 ```typescript
 // app.module.ts
@@ -44,12 +47,12 @@ import { DicoshotModule } from 'dicoshot-nest';
 export class AppModule {}
 ```
 
-앱을 실행하면 Discord 채널에 다음과 같은 embed가 도착합니다.
+When you run the app, the following embeds arrive in the Discord channel.
 
-- **시작 시**: 녹색 embed, 제목 "🟢 Application Started", 서비스명/환경/버전/hostname/시간 포함
-- **종료 시**: 빨간 embed, 제목 "🔴 Application Stopped"
+- **On startup**: green embed, title "🟢 Application Started", includes service name/environment/version/hostname/timestamp
+- **On shutdown**: red embed, title "🔴 Application Stopped"
 
-## ConfigService 연동
+## ConfigService integration
 
 ```typescript
 DicoshotModule.registerAsync({
@@ -59,19 +62,20 @@ DicoshotModule.registerAsync({
     applicationName: config.get('APP_NAME'),
   }),
   inject: [ConfigService],
-  // filter/interceptor는 registerAsync 호출 시점에 별도로 지정합니다.
-  // (DynamicModule의 APP_FILTER/APP_INTERCEPTOR 등록 여부를 결정하기 때문에
-  //  비동기 팩토리 결과와 무관하게 등록 시점 값으로 고정됩니다)
+  // filter/interceptor must be specified separately at the registerAsync() call site.
+  // (They determine whether APP_FILTER/APP_INTERCEPTOR are registered on the
+  //  DynamicModule, so they're fixed at registration time regardless of the
+  //  async factory's result.)
   filter: true,
   interceptor: { slowThreshold: 2000 },
 });
 ```
 
-## 커스텀 메시지 직접 발송
+## Sending custom messages directly
 
-`DicoshotService`를 주입받아 코드 어디서든 Discord 메시지를 발송할 수 있습니다.
+Inject `DicoshotService` to send Discord messages from anywhere in your code.
 
-### sendCustom() — 편의 메서드
+### sendCustom() — convenience method
 
 ```typescript
 @Injectable()
@@ -80,66 +84,125 @@ export class DeployService {
 
   async onDeployComplete(version: string) {
     await this.dicoshot.sendCustom({
-      title: '배포 완료',
-      description: `v${version} 정상 배포`,
+      title: 'Deploy complete',
+      description: `v${version} deployed successfully`,
       color: 'success', // 'success' | 'danger' | 'warning' | 'info'
+      fields: [{ name: 'Version', value: `v${version}`, inline: true }],
+      mention: '<@&123456789012345678>', // appended after the description
     });
   }
 }
 ```
 
-색상 프리셋:
+Color presets:
 
-| 값          | 색상   |
+| Value       | Color  |
 | ----------- | ------ |
-| `'success'` | 녹색   |
-| `'danger'`  | 빨간색 |
-| `'warning'` | 노란색 |
-| `'info'`    | 파란색 |
+| `'success'` | Green  |
+| `'danger'`  | Red    |
+| `'warning'` | Yellow |
+| `'info'`    | Blue   |
 
-hex 값을 직접 지정할 수도 있습니다: `color: 0xFF0000`
+You can also specify a hex value directly: `color: 0xFF0000`
 
-### send() — raw 메서드
+### send() — raw method
 
-Discord embed 구조를 직접 구성해서 발송합니다.
+Build the Discord embed structure yourself and send it.
 
 ```typescript
 await this.dicoshot.send({
   embeds: [
     {
-      title: '알림',
+      title: 'Notification',
       description: '...',
       color: 0x57f287,
-      fields: [{ name: '버전', value: 'v1.2.3', inline: true }],
+      fields: [{ name: 'Version', value: 'v1.2.3', inline: true }],
     },
   ],
 });
 ```
 
-> 두 메서드 모두 실패 시 에러를 throw합니다. try/catch로 처리하세요.
+> Neither method throws. Both resolve to a `boolean` indicating whether the message was delivered; failures are logged as a WARN, consistent with the rest of the SDK's failure-isolation behavior.
 
-## 예외 자동 알림 (`filter`)
+### `@DicoshotNotify()` — decorator
 
-`filter` 옵션을 켜면 `DicoshotExceptionFilter`가 전역 `APP_FILTER`로 등록되어, 처리되지 않은 모든 예외를 Discord로 전송합니다. HTTP 컨텍스트가 아닌 경우(WebSocket, RPC 등)는 알림하지 않고 무시합니다.
+Annotate a controller (or any Nest-pipeline) handler to send a custom message automatically once it resolves successfully. No `@UseInterceptors()` setup needed — the interceptor is registered globally and is a no-op on handlers without the decorator. Nothing is sent if the handler throws (use `filter`/`interceptor` for error notifications).
+
+```typescript
+@Controller('orders')
+export class OrderController {
+  @Post()
+  @DicoshotNotify({ title: 'New order created', color: 'success' })
+  create(@Body() dto: CreateOrderDto) {
+    return this.orderService.create(dto);
+  }
+
+  @Post(':id/deploy')
+  @DicoshotNotify({
+    title: (args) => `Deploy complete: ${args[0]}`, // args = handler arguments, in order
+    description: (_args, result) => `Result: ${JSON.stringify(result)}`,
+    color: 'success',
+  })
+  deploy(@Param('id') id: string) {
+    return this.orderService.deploy(id);
+  }
+}
+```
+
+`title`/`description` accept either a static string or a `(args, result) => string` function, where `args` is the handler's argument array and `result` is its return value.
+
+## Automatic exception notifications (`filter`)
+
+Enabling the `filter` option registers `DicoshotExceptionFilter` as a global `APP_FILTER`. By default, it notifies Discord for unhandled exceptions and any error with an HTTP status of `500` or above (4xx `HttpException`s like `NotFoundException` are not notified unless `minStatus` is lowered). Non-HTTP contexts (WebSocket, RPC, etc.) are ignored and not notified.
+
+When a stack trace is available, the notification includes a `Location` field with the exact `file:line:col` where the error was thrown — extracted from the top stack frame — so you don't have to scan the full `Stack Trace` block to find it.
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   applicationName: 'order-service',
-  filter: true, // 또는 FilterOptions 객체
+  filter: true, // or a FilterOptions object
 });
 ```
 
+This is what arrives in Discord:
+
+> 🚨 **[production] order-service — TypeError**
+> `Cannot read properties of undefined (reading 'id')`
+>
+> **Service** `order-service` **Environment** `production` **Status** `500`
+> **Method** `POST` **Path** `/orders`
+>
+> **Location**
+> `/app/src/order/order.service.ts:42:18`
+>
+> **Request Body**
+>
+> ```json
+> { "productId": "abc123", "quantity": 2 }
+> ```
+>
+> **Stack Trace**
+>
+> ```
+> TypeError: Cannot read properties of undefined (reading 'id')
+>     at OrderService.create (/app/src/order/order.service.ts:42:18)
+>     at OrderController.create (/app/src/order/order.controller.ts:15:30)
+> ```
+
+`Location` is always the very first line of `Stack Trace` — it's pulled out into its own field so you can see where the error actually happened without scrolling through the rest of the trace.
+
 ### FilterOptions
 
-| 키               | 기본값 | 설명                                                           |
-| ---------------- | ------ | -------------------------------------------------------------- |
-| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)              |
-| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준) |
-| `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)          |
-| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제        |
-| `includeStack`   | `true` | 스택트레이스 포함 여부                                         |
-| `includeRequest` | `true` | 요청 바디 포함 여부                                            |
+| Key              | Default | Description                                                                                            |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `minStatus`      | `500`   | Only notify for status codes at or above this value (unhandled exceptions are always treated as `500`) |
+| `ignore`         | -       | Array of HTTP status codes to skip notifying (e.g. `[404]`)                                            |
+| `environment`    | -       | Only notify in this environment (`string` or `string[]`, based on `NODE_ENV`)                          |
+| `mention`        | -       | Mention string to add to the embed body (e.g. `'<@&ROLE_ID>'`)                                         |
+| `throttle`       | -       | Suppress repeated notifications for the same error (class+method+path) for N seconds                   |
+| `includeStack`   | `true`  | Whether to include the stack trace                                                                     |
+| `includeRequest` | `true`  | Whether to include the request body                                                                    |
 
 ```typescript
 DicoshotModule.register({
@@ -148,31 +211,32 @@ DicoshotModule.register({
     ignore: [404, 401],
     environment: 'production',
     mention: '<@&123456789012345678>',
-    throttle: 60, // 같은 에러는 60초에 한 번만 알림
+    throttle: 60, // notify the same error at most once every 60 seconds
   },
 });
 ```
 
-에러 알림은 `webhooks.error`가 설정되어 있으면 그 URL로, 없으면 기본 `webhookUrl`로 전송됩니다.
+Error notifications are sent to `webhooks.error` if configured, otherwise to the default `webhookUrl`.
 
-## 느린 응답 / 에러 알림 (`interceptor`)
+## Slow response / error notifications (`interceptor`)
 
-`interceptor` 옵션을 켜면 `DicoshotInterceptor`가 전역 `APP_INTERCEPTOR`로 등록되어, 응답 시간이 임계값을 초과하면 Discord로 알림합니다. `filter`가 켜져 있지 않은 경우에는 에러 알림도 인터셉터가 함께 처리합니다(필터가 켜져 있으면 중복 알림을 막기 위해 인터셉터는 에러 알림을 보내지 않습니다).
+Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates) — including the same `Location` and `Stack Trace` fields described above.
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
-  interceptor: true, // 또는 InterceptorOptions 객체
+  interceptor: true, // or an InterceptorOptions object
 });
 ```
 
 ### InterceptorOptions
 
-| 키              | 기본값  | 설명                                                 |
-| --------------- | ------- | ---------------------------------------------------- |
-| `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                  |
-| `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`) |
-| `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행    |
+| Key             | Default | Description                                                                                            |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `slowThreshold` | `3000`  | Threshold (ms) for considering a response slow                                                         |
+| `excludePaths`  | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`)                                |
+| `onlyErrors`    | `false` | If `true`, disables slow response notifications and only sends error notifications                     |
+| `minStatus`     | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
 
 ```typescript
 DicoshotModule.register({
@@ -184,25 +248,25 @@ DicoshotModule.register({
 });
 ```
 
-느린 응답 알림은 `webhooks.slow`가 설정되어 있으면 그 URL로, 없으면 기본 `webhookUrl`로 전송됩니다.
+Slow response notifications are sent to `webhooks.slow` if configured, otherwise to the default `webhookUrl`.
 
-## Webhook 재전송 (`retry`)
+## Webhook retry (`retry`)
 
-webhook 전송이 실패하면(네트워크 오류, Discord 5xx, rate limit 등) 지수 백오프로 재시도합니다. Discord가 `429`와 함께 `Retry-After` 헤더를 보내면 그 값을 우선 사용하고, 그 외에는 `backoffMs * 2^시도횟수`로 대기합니다.
+If a webhook delivery fails (network error, Discord 5xx, rate limit, etc.), it's retried with exponential backoff. If Discord returns `429` with a `Retry-After` header, that value takes priority; otherwise the wait is `backoffMs * 2^attempt`.
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
-  retry: true, // 또는 RetryOptions 객체. 기본값은 꺼져 있음 (재시도 없음)
+  retry: true, // or a RetryOptions object. Disabled by default (no retries)
 });
 ```
 
 ### RetryOptions
 
-| 키          | 기본값 | 설명                                                     |
-| ----------- | ------ | -------------------------------------------------------- |
-| `attempts`  | `2`    | 최초 시도 실패 후 재시도 횟수                            |
-| `backoffMs` | `500`  | 첫 재시도까지의 대기 시간 (ms). 이후 시도마다 2배씩 증가 |
+| Key         | Default | Description                                                               |
+| ----------- | ------- | ------------------------------------------------------------------------- |
+| `attempts`  | `2`     | Number of retries after the initial attempt fails                         |
+| `backoffMs` | `500`   | Wait time (ms) before the first retry. Doubles on each subsequent attempt |
 
 ```typescript
 DicoshotModule.register({
@@ -211,98 +275,143 @@ DicoshotModule.register({
 });
 ```
 
-모든 재시도가 실패하면 최종 에러가 호출자에게 전달됩니다. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor`는 이 에러를 잡아 WARN 로그만 남기므로 앱 동작에는 영향이 없습니다.
+If all retries fail, the final error is propagated to the caller. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor` catch this error and only emit a WARN log, so it doesn't affect app behavior.
 
-## 설정
+## Configuration
 
-| 키                 | 기본값     | 설명                                                                                    |
-| ------------------ | ---------- | --------------------------------------------------------------------------------------- |
-| `webhookUrl`       | **(필수)** | Discord Webhook URL. 미설정 시 자동 비활성화                                            |
-| `enabled`          | `true`     | 전체 활성화 토글 (시작/종료 알림에 적용)                                                |
-| `notifyOnStartup`  | `true`     | 시작 알림 발송 여부                                                                     |
-| `notifyOnShutdown` | `true`     | 종료 알림 발송 여부                                                                     |
-| `applicationName`  | -          | embed에 표시될 서비스 이름                                                              |
-| `username`         | -          | webhook bot의 표시 이름 override                                                        |
-| `timeoutMs`        | `5000`     | HTTP 타임아웃 (ms)                                                                      |
-| `webhooks.error`   | -          | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                   |
-| `webhooks.slow`    | -          | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                              |
-| `filter`           | `false`    | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                |
-| `interceptor`      | `false`    | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions)) |
-| `retry`            | `false`    | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))     |
+| Key                | Default | Description                                                                                                                                          |
+| ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `webhookUrl`       | -       | Discord webhook URL. Auto-disabled if not set                                                                                                        |
+| `enabled`          | `true`  | Global enable toggle (applies to startup/shutdown notifications)                                                                                     |
+| `notifyOnStartup`  | `true`  | Whether to send a startup notification                                                                                                               |
+| `notifyOnShutdown` | `true`  | Whether to send a shutdown notification                                                                                                              |
+| `applicationName`  | -       | Service name shown in the embed                                                                                                                      |
+| `locale`           | `'en'`  | Language for notification titles/field labels: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, or a custom [`DicoshotMessages`](#example-custom-locale) object |
+| `timeoutMs`        | `5000`  | HTTP timeout (ms)                                                                                                                                    |
+| `webhooks.error`   | -       | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)                                                                       |
+| `webhooks.slow`    | -       | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)                                                                   |
+| `filter`           | `false` | Enable automatic exception notifications (`boolean` or [`FilterOptions`](#filteroptions))                                                            |
+| `interceptor`      | `false` | Enable slow response/error notifications (`boolean` or [`InterceptorOptions`](#interceptoroptions))                                                  |
+| `retry`            | `false` | Enable retries on webhook delivery failure (`boolean` or [`RetryOptions`](#retryoptions))                                                            |
 
-### 예시: 시작 시에만 알림
+### Example: notify only on startup
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
   notifyOnShutdown: false,
   applicationName: 'order-service',
-  username: 'Dicoshot Bot',
 });
 ```
 
-### 예시: 에러/느린 응답을 다른 채널로 분리
+### Example: notifications in another language
 
 ```typescript
 DicoshotModule.register({
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL, // 시작/종료 알림용
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  applicationName: '주문-서비스',
+  locale: 'ko', // 'en' | 'ko' | 'ja' | 'zh'
+});
+```
+
+Titles and field labels (Service, Environment, Status, Location, ...) are translated. Values that come from your runtime — the exception class name (`TypeError`, `NotFoundException`, ...), the error message, the stack trace, the request path — are sent as-is and aren't translated.
+
+### Example: custom locale
+
+Not all of your team's users speak one of the built-in languages? Pass a full `DicoshotMessages` object instead of a locale code and every title/field label is taken from it.
+
+```typescript
+import { DicoshotMessages } from 'dicoshot-nest';
+
+const fr: DicoshotMessages = {
+  startupTitle: '🟢 Application démarrée',
+  shutdownTitle: '🔴 Application arrêtée',
+  slowResponseLabel: 'Réponse lente',
+  field: {
+    service: 'Service',
+    environment: 'Environnement',
+    version: 'Version',
+    hostname: 'Hôte',
+    time: 'Heure',
+    status: 'Statut',
+    method: 'Méthode',
+    path: 'Chemin',
+    duration: 'Durée',
+    location: 'Emplacement',
+    stackTrace: "Pile d'appels",
+    requestBody: 'Corps de la requête',
+  },
+};
+
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
+  locale: fr,
+});
+```
+
+### Example: separate channels for errors and slow responses
+
+```typescript
+DicoshotModule.register({
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL, // for startup/shutdown notifications
   webhooks: {
-    error: process.env.DISCORD_ERROR_WEBHOOK_URL, // 예외 알림용
-    slow: process.env.DISCORD_SLOW_WEBHOOK_URL, // 느린 응답 알림용
+    error: process.env.DISCORD_ERROR_WEBHOOK_URL, // for exception notifications
+    slow: process.env.DISCORD_SLOW_WEBHOOK_URL, // for slow response notifications
   },
   filter: { environment: 'production' },
   interceptor: { slowThreshold: 2000 },
 });
 ```
 
-### 예시: 환경 변수로 webhook URL 주입
+### Example: inject the webhook URL via an environment variable
 
 ```typescript
 DicoshotModule.register({
-  webhookUrl: process.env.DISCORD_WEBHOOK_URL ?? '',
+  webhookUrl: process.env.DISCORD_WEBHOOK_URL,
 });
 ```
 
-값이 비어있으면 자동으로 비활성화되어 로컬 개발 환경에서 오류가 발생하지 않습니다.
+`webhookUrl` is optional — if it's unset or empty, the SDK is automatically disabled, so no errors occur in local development.
 
-## 동작 방식
+## How it works
 
-1. `DicoshotModule.register()`/`registerAsync()`로 옵션을 NestJS DI 컨테이너에 등록합니다.
-2. `filter`/`interceptor` 옵션이 켜져 있으면 각각 `APP_FILTER`/`APP_INTERCEPTOR`로 전역 등록됩니다.
-3. `DicoshotListener`가 NestJS 라이프사이클 훅을 구독해 `onApplicationBootstrap()`/`onApplicationShutdown()` 시점에 시작/종료 메시지를 발송합니다.
-4. 요청 처리 중 예외가 발생하면 `DicoshotExceptionFilter`(또는 `filter`가 꺼져 있을 때는 `DicoshotInterceptor`)가 에러 메시지를 발송합니다.
-5. 응답 시간이 `slowThreshold`를 초과하면 `DicoshotInterceptor`가 느린 응답 메시지를 발송합니다.
-6. 모든 webhook 호출은 실패해도 예외를 삼키고 WARN 로그만 남기므로 앱 동작에 영향을 주지 않습니다.
+1. `DicoshotModule.register()`/`registerAsync()` registers the options in the NestJS DI container.
+2. `DicoshotNotifyInterceptor` is always registered globally as `APP_INTERCEPTOR`; it's a no-op except on handlers annotated with `@DicoshotNotify()`. If the `filter`/`interceptor` options are enabled, `DicoshotExceptionFilter`/`DicoshotInterceptor` are also registered globally as `APP_FILTER`/`APP_INTERCEPTOR`.
+3. `DicoshotListener` subscribes to NestJS lifecycle hooks and sends startup/shutdown messages at `onApplicationBootstrap()`/`onApplicationShutdown()`.
+4. When an exception occurs during request handling, `DicoshotExceptionFilter` (or `DicoshotInterceptor` if `filter` is disabled) sends an error message.
+5. When response time exceeds `slowThreshold`, `DicoshotInterceptor` sends a slow response message.
+6. When a handler annotated with `@DicoshotNotify()` resolves successfully, `DicoshotNotifyInterceptor` sends the configured custom message.
+7. Every webhook call swallows its own exceptions and only emits a WARN log on failure, so app behavior is never affected.
 
-## MSA 환경
+## MSA environments
 
-- 각 서비스가 `dicoshot-nest`를 독립적으로 사용합니다.
-- 메시지에 `applicationName`과 `hostname`이 자동 포함되어 어느 서비스의 어느 인스턴스인지 식별 가능합니다.
-- K8s 등에서 Pod 재시작이 잦은 경우 `notifyOnStartup: false`로 시작 알림만 끄거나, `enabled: false`로 전체 비활성화할 수 있습니다.
-- 서비스별로 `filter.throttle`을 설정해 동일 에러가 반복 발생해도 Discord 채널이 도배되지 않도록 할 수 있습니다.
+- Each service uses `dicoshot-nest` independently.
+- `applicationName` and `hostname` are automatically included in messages, making it easy to identify which service and which instance sent them.
+- In environments with frequent pod restarts (e.g. K8s), you can disable only startup notifications with `notifyOnStartup: false`, or disable everything with `enabled: false`.
+- Configure `filter.throttle` per service to keep a repeated error from flooding the Discord channel.
 
-## 요구사항
+## Requirements
 
-- Node.js 18 이상
-- NestJS 10 이상
+- Node.js 18+
+- NestJS 10+
 
-## 빌드
+## Build
 
 ```bash
-# 전체 빌드
+# Build everything
 npm run build --workspaces
 
-# 개별 빌드
+# Build individually
 cd dicoshot-core && npm run build
 cd dicoshot-nest && npm run build
 ```
 
-## 범위 외 (현재 버전)
+## Out of scope (current version)
 
-다음 기능은 아직 포함되지 않습니다.
+The following features are not yet included.
 
-- 비동기 큐잉 (재시도 외 영구 실패 메시지 보관)
-- 다중 webhook 동시 발송 또는 Slack 등 타 플랫폼
+- Asynchronous queueing (persisting messages that fail permanently beyond retries)
+- Simultaneous delivery to multiple webhooks or other platforms like Slack
 
 ## License
 

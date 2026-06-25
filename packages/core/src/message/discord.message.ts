@@ -13,6 +13,5 @@ export interface DiscordEmbed {
 }
 
 export interface DiscordMessage {
-  username?: string;
   embeds?: DiscordEmbed[];
 }

@@ -1,6 +1,7 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Inject,
   Injectable,
   Logger,
@@ -8,13 +9,14 @@ import {
 } from '@nestjs/common';
 
 import type { DicoshotOptions, DiscordEmbed, InterceptorOptions } from 'dicoshot-core';
-import { DicoshotClientImpl } from 'dicoshot-core';
+import { DicoshotClientImpl, getMessages } from 'dicoshot-core';
 
 import { Request } from 'express';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
+import { StackUtil } from '../utils/stack.util';
 
 const SLOW_COLOR = 0xfee75c;
 const ERROR_COLOR = 0xed4245;
@@ -54,10 +56,13 @@ export class DicoshotInterceptor implements NestInterceptor {
       catchError((err: unknown) => {
         // 에러 알림은 filter가 없을 때만 인터셉터에서 처리 (중복 방지)
         if (!this.options.filter) {
-          const duration = Date.now() - start;
-          this.notifyError(request, err, duration).catch((e: Error) =>
-            this.logger.warn(`Failed to send error notification: ${e.message}`),
-          );
+          const status = err instanceof HttpException ? err.getStatus() : 500;
+          if (status >= (opts.minStatus ?? 500)) {
+            const duration = Date.now() - start;
+            this.notifyError(request, err, duration).catch((e: Error) =>
+              this.logger.warn(`Failed to send error notification: ${e.message}`),
+            );
+          }
         }
         return throwError(() => err);
       }),
@@ -80,24 +85,22 @@ export class DicoshotInterceptor implements NestInterceptor {
     const env = process.env.NODE_ENV ?? 'development';
     const appName = this.options.applicationName ?? 'Unknown';
     const now = new Date().toISOString();
+    const msg = getMessages(this.options.locale);
 
     const embed: DiscordEmbed = {
-      title: `🐢 [${env}] ${appName} — Slow Response`,
+      title: `🐢 [${env}] ${appName} — ${msg.slowResponseLabel}`,
       color: SLOW_COLOR,
       fields: [
-        { name: 'Service', value: appName, inline: true },
-        { name: 'Environment', value: env, inline: true },
-        { name: 'Method', value: request.method, inline: true },
-        { name: 'Path', value: request.path, inline: true },
-        { name: 'Duration', value: `${duration}ms`, inline: true },
+        { name: msg.field.service, value: appName, inline: true },
+        { name: msg.field.environment, value: env, inline: true },
+        { name: msg.field.method, value: request.method, inline: true },
+        { name: msg.field.path, value: request.path, inline: true },
+        { name: msg.field.duration, value: `${duration}ms`, inline: true },
       ],
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, {
-      username: this.options.username,
-      embeds: [embed],
-    });
+    await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 
   private async notifyError(request: Request, err: unknown, duration: number): Promise<void> {
@@ -111,25 +114,39 @@ export class DicoshotInterceptor implements NestInterceptor {
     const appName = this.options.applicationName ?? 'Unknown';
     const errorName = err instanceof Error ? err.constructor.name : 'UnknownError';
     const errorMessage = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
     const now = new Date().toISOString();
+    const msg = getMessages(this.options.locale);
+
+    const fields = [
+      { name: msg.field.service, value: appName, inline: true },
+      { name: msg.field.environment, value: env, inline: true },
+      { name: msg.field.method, value: request.method, inline: true },
+      { name: msg.field.path, value: request.path, inline: true },
+      { name: msg.field.duration, value: `${duration}ms`, inline: true },
+    ];
+
+    const location = StackUtil.extractLocation(stack);
+    if (location) {
+      fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
+    }
+
+    if (stack) {
+      fields.push({
+        name: msg.field.stackTrace,
+        value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
+        inline: false,
+      });
+    }
 
     const embed: DiscordEmbed = {
       title: `🚨 [${env}] ${appName} — ${errorName}`,
       description: `\`${errorMessage}\``,
       color: ERROR_COLOR,
-      fields: [
-        { name: 'Service', value: appName, inline: true },
-        { name: 'Environment', value: env, inline: true },
-        { name: 'Method', value: request.method, inline: true },
-        { name: 'Path', value: request.path, inline: true },
-        { name: 'Duration', value: `${duration}ms`, inline: true },
-      ],
+      fields,
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, {
-      username: this.options.username,
-      embeds: [embed],
-    });
+    await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 }

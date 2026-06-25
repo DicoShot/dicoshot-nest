@@ -11,6 +11,7 @@ export class DicoshotClientImpl implements DicoshotClient {
   constructor(private readonly options: DicoshotOptions) {}
 
   async send(message: DiscordMessage): Promise<void> {
+    if (!this.options.webhookUrl) return;
     await this.sendTo(this.options.webhookUrl, message);
   }
 
