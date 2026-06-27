@@ -148,9 +148,7 @@ export class OrderController {
 }
 ```
 
-`title`/`description`은 고정 문자열 또는 `(args, result) => string` 형태의 함수를 받을 수 있습니다. `args`는 핸들러의 인자 배열, `result`는 반환값입니다.
-
-> `mention`은 `@DicoshotNotify()`에서 지원하지 않습니다. 멘션이 필요하면 `DicoshotService.sendCustom()`을 직접 사용하세요.
+`title`/`description`은 고정 문자열 또는 `(args, result) => string` 형태의 함수를 받을 수 있습니다. `args`는 핸들러의 인자 배열, `result`는 반환값입니다. `mention`은 `sendCustom()`과 동일하게 실제 Discord 알림을 울립니다.
 
 ## 예외 자동 알림 (`filter`)
 
@@ -241,6 +239,10 @@ DicoshotModule.register({
 | `minStatus`      | `500`   | 이 값 이상인 status의 에러만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
 | `includeStack`   | `true`  | 에러 알림에 스택트레이스 포함 여부                                           |
 | `includeRequest` | `true`  | 에러 알림에 요청 바디 포함 여부                                              |
+| `mention`        | -       | 에러 알림 멘션 문자열 (최상위 `mention` 오버라이드)                          |
+| `environment`    | -       | 이 환경에서만 알림 (최상위 `environment` 오버라이드)                         |
+| `throttle`       | -       | 동일 에러 반복 알림을 N초 동안 억제 (최상위 `throttle` 오버라이드)           |
+| `ignoreErrors`   | -       | 알림하지 않을 에러 클래스 배열 (예: `[NotFoundException]`)                   |
 
 ```typescript
 DicoshotModule.register({
@@ -292,6 +294,10 @@ DicoshotModule.register({
 | `applicationName`  | -       | embed에 표시될 서비스 이름                                                                                                  |
 | `locale`           | `'en'`  | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체 |
 | `timeoutMs`        | `5000`  | HTTP 타임아웃 (ms)                                                                                                          |
+| `global`           | `false` | 전역 모듈로 등록. 각 모듈에 `DicoshotModule`을 임포트하지 않아도 `DicoshotService` 주입 가능                                |
+| `environment`      | -       | 공통 기본값: 이 환경에서만 알림 (`string` 또는 `string[]`). `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능 |
+| `mention`          | -       | 공통 기본값: 모든 에러 알림에 추가할 멘션 문자열. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능          |
+| `throttle`         | -       | 공통 기본값: 동일 에러 반복 알림을 N초 동안 억제. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능          |
 | `webhooks.error`   | -       | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                       |
 | `webhooks.slow`    | -       | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                  |
 | `filter`           | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                                                    |

@@ -35,7 +35,7 @@ export class DicoshotNotifyInterceptor implements NestInterceptor {
             : options.description;
 
         // sendCustom() never rejects: failures are logged internally by DicoshotService
-        void this.dicoshot.sendCustom({ title, description, color: options.color });
+        void this.dicoshot.sendCustom({ title, description, color: options.color, mention: options.mention });
       }),
     );
   }

@@ -18,6 +18,7 @@ import { DicoshotNotifyInterceptor } from './interceptors/dicoshot-notify.interc
 interface DicoshotAsyncOptions extends Pick<ModuleMetadata, 'imports'> {
   useFactory: (...args: unknown[]) => Promise<DicoshotOptions> | DicoshotOptions;
   inject?: unknown[];
+  global?: boolean;
   /**
    * Set at registration time so APP_FILTER is conditionally added.
    * Merged into DICOSHOT_OPTIONS and overrides the factory's filter value.
@@ -62,6 +63,7 @@ export class DicoshotModule {
   static register(options: DicoshotOptions): DynamicModule {
     return {
       module: DicoshotModule,
+      global: options.global ?? false,
       providers: buildProviders(options),
       exports: [DicoshotService],
     };
@@ -71,6 +73,7 @@ export class DicoshotModule {
     useFactory,
     inject,
     imports,
+    global: isGlobal,
     filter,
     interceptor,
   }: DicoshotAsyncOptions): DynamicModule {
@@ -107,6 +110,7 @@ export class DicoshotModule {
 
     return {
       module: DicoshotModule,
+      global: isGlobal ?? false,
       imports: imports ?? [],
       providers,
       exports: [DicoshotService],

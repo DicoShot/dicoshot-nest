@@ -56,8 +56,13 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
 
   private resolveOptions(): FilterOptions {
     const filter = this.options.filter;
-    if (!filter || filter === true) return {};
-    return filter;
+    const specific = !filter || filter === true ? {} : filter;
+    return {
+      environment: this.options.environment,
+      mention: this.options.mention,
+      throttle: this.options.throttle,
+      ...specific,
+    };
   }
 
   private shouldNotify(

@@ -9,6 +9,7 @@ export interface DicoshotNotifyOptions {
   title: DicoshotNotifyResolver<string>;
   description?: DicoshotNotifyResolver<string>;
   color?: ColorPreset | number;
+  mention?: string;
 }
 
 /**

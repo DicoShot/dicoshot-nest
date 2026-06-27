@@ -19,6 +19,11 @@ export interface InterceptorOptions {
   minStatus?: number;
   includeStack?: boolean;
   includeRequest?: boolean;
+  mention?: string;
+  environment?: string | string[];
+  throttle?: number;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  ignoreErrors?: Function[];
 }
 
 export interface DicoshotWebhooks {
@@ -45,6 +50,17 @@ export interface DicoshotOptions {
   locale?: Locale | DicoshotMessages;
   timeoutMs?: number;
   webhooks?: DicoshotWebhooks;
+  /**
+   * Register as a global NestJS module so DicoshotService can be injected
+   * anywhere without importing DicoshotModule in each feature module.
+   */
+  global?: boolean;
+  /** Shared default applied to both filter and interceptor; overridden by per-option settings. */
+  environment?: string | string[];
+  /** Shared default applied to both filter and interceptor; overridden by per-option settings. */
+  mention?: string;
+  /** Shared default applied to both filter and interceptor; overridden by per-option settings. */
+  throttle?: number;
   filter?: boolean | FilterOptions;
   interceptor?: boolean | InterceptorOptions;
   retry?: boolean | RetryOptions;

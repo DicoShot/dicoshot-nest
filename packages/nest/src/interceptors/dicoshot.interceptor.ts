@@ -17,6 +17,7 @@ import { catchError, tap } from 'rxjs/operators';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
 import { StackUtil } from '../utils/stack.util';
+import { ThrottleUtil } from '../utils/throttle.util';
 
 const SLOW_COLOR = 0xfee75c;
 const ERROR_COLOR = 0xed4245;
@@ -47,7 +48,7 @@ export class DicoshotInterceptor implements NestInterceptor {
       tap(() => {
         if (opts.onlyErrors) return;
         const duration = Date.now() - start;
-        if (duration >= threshold) {
+        if (duration >= threshold && this.isAllowedEnvironment(opts.environment)) {
           this.notifySlow(request, duration).catch((err: Error) =>
             this.logger.warn(`Failed to send slow request notification: ${err.message}`),
           );
@@ -57,7 +58,7 @@ export class DicoshotInterceptor implements NestInterceptor {
         // 에러 알림은 filter가 없을 때만 인터셉터에서 처리 (중복 방지)
         if (!this.options.filter) {
           const status = err instanceof HttpException ? err.getStatus() : 500;
-          if (status >= (opts.minStatus ?? 500)) {
+          if (status >= (opts.minStatus ?? 500) && this.shouldNotifyError(err, request, opts)) {
             const duration = Date.now() - start;
             this.notifyError(request, err, duration, opts).catch((e: Error) =>
               this.logger.warn(`Failed to send error notification: ${e.message}`),
@@ -71,8 +72,30 @@ export class DicoshotInterceptor implements NestInterceptor {
 
   private resolveOptions(): InterceptorOptions {
     const interceptor = this.options.interceptor;
-    if (!interceptor || interceptor === true) return {};
-    return interceptor;
+    const specific = !interceptor || interceptor === true ? {} : interceptor;
+    return {
+      environment: this.options.environment,
+      mention: this.options.mention,
+      throttle: this.options.throttle,
+      ...specific,
+    };
+  }
+
+  private shouldNotifyError(err: unknown, request: Request, opts: InterceptorOptions): boolean {
+    if (opts.ignoreErrors?.some((cls) => err instanceof cls)) return false;
+    if (!this.isAllowedEnvironment(opts.environment)) return false;
+    if (opts.throttle) {
+      const name = err instanceof Error ? err.constructor.name : 'Error';
+      const key = `${name}_${request.method}_${request.path}`;
+      if (ThrottleUtil.shouldThrottle(key, opts.throttle)) return false;
+    }
+    return true;
+  }
+
+  private isAllowedEnvironment(environment: string | string[] | undefined): boolean {
+    if (!environment) return true;
+    const envs = Array.isArray(environment) ? environment : [environment];
+    return envs.includes(process.env.NODE_ENV ?? 'development');
   }
 
   private async notifySlow(request: Request, duration: number): Promise<void> {
@@ -163,6 +186,9 @@ export class DicoshotInterceptor implements NestInterceptor {
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, { embeds: [embed] });
+    await this.client.sendTo(webhookUrl, {
+      ...(opts.mention !== undefined && { content: opts.mention }),
+      embeds: [embed],
+    });
   }
 }

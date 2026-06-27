@@ -149,9 +149,7 @@ export class OrderController {
 }
 ```
 
-`title`/`description` accept either a static string or a `(args, result) => string` function, where `args` is the handler's argument array and `result` is its return value.
-
-> `mention` is not available in `@DicoshotNotify()`. Use `DicoshotService.sendCustom()` directly if you need to add a mention.
+`title`/`description` accept either a static string or a `(args, result) => string` function, where `args` is the handler's argument array and `result` is its return value. `mention` triggers a real Discord ping, same as in `sendCustom()`.
 
 ## Automatic exception notifications (`filter`)
 
@@ -242,6 +240,10 @@ DicoshotModule.register({
 | `minStatus`      | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
 | `includeStack`   | `true`  | Whether to include the stack trace in error notifications                                              |
 | `includeRequest` | `true`  | Whether to include the request body in error notifications                                             |
+| `mention`        | -       | Mention string for error notifications (overrides top-level `mention`)                                 |
+| `environment`    | -       | Only notify in this environment (overrides top-level `environment`)                                    |
+| `throttle`       | -       | Suppress repeated error notifications for the same error for N seconds (overrides top-level `throttle`) |
+| `ignoreErrors`   | -       | Array of error classes to skip notifying (e.g. `[NotFoundException]`)                                  |
 
 ```typescript
 DicoshotModule.register({
@@ -293,6 +295,10 @@ If all retries fail, the final error is propagated to the caller. `DicoshotListe
 | `applicationName`  | -       | Service name shown in the embed                                                                                                                      |
 | `locale`           | `'en'`  | Language for notification titles/field labels: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, or a custom [`DicoshotMessages`](#example-custom-locale) object |
 | `timeoutMs`        | `5000`  | HTTP timeout (ms)                                                                                                                                    |
+| `global`           | `false` | Register as a global module so `DicoshotService` can be injected anywhere without importing `DicoshotModule` in each feature module                  |
+| `environment`      | -       | Shared default: only notify in this environment (`string` or `string[]`). Applied to both `filter` and `interceptor`; overridden per-option           |
+| `mention`          | -       | Shared default: mention string added to all error notifications. Applied to both `filter` and `interceptor`; overridden per-option                   |
+| `throttle`         | -       | Shared default: suppress repeated notifications for the same error for N seconds. Applied to both `filter` and `interceptor`; overridden per-option  |
 | `webhooks.error`   | -       | Dedicated webhook URL for exception notifications (falls back to `webhookUrl`)                                                                       |
 | `webhooks.slow`    | -       | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)                                                                   |
 | `filter`           | `false` | Enable automatic exception notifications (`boolean` or [`FilterOptions`](#filteroptions))                                                            |
