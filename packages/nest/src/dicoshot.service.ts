@@ -50,10 +50,10 @@ export class DicoshotService {
     mention,
   }: CustomMessageOptions): Promise<boolean> {
     const resolvedColor = typeof color === 'string' ? COLOR_MAP[color] : color;
-    const resolvedDescription = [description, mention].filter(Boolean).join('\n') || undefined;
 
     return this.send({
-      embeds: [{ title, description: resolvedDescription, color: resolvedColor, fields }],
+      ...(mention !== undefined && { content: mention }),
+      embeds: [{ title, description, color: resolvedColor, fields }],
     });
   }
 }

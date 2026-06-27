@@ -136,16 +136,17 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
       });
     }
 
-    const mention = opts.mention ? `\n${opts.mention}` : '';
-
     const embed: DiscordEmbed = {
       title: `🚨 [${env}] ${appName} — ${errorName}`,
-      description: `\`${errorMessage}\`${mention}`,
+      description: `\`${errorMessage}\``,
       color: ERROR_COLOR,
       fields,
       timestamp: now,
     };
 
-    await this.client.sendTo(webhookUrl, { embeds: [embed] });
+    await this.client.sendTo(webhookUrl, {
+      ...(opts.mention !== undefined && { content: opts.mention }),
+      embeds: [embed],
+    });
   }
 }

@@ -87,7 +87,7 @@ export class DeployService {
       description: `v${version} 정상 배포`,
       color: 'success', // 'success' | 'danger' | 'warning' | 'info'
       fields: [{ name: '버전', value: `v${version}`, inline: true }],
-      mention: '<@&123456789012345678>', // description 뒤에 덧붙여짐
+      mention: '<@&123456789012345678>', // Discord content 필드로 전송되어 실제 멘션 알림이 울림
     });
   }
 }

@@ -72,19 +72,21 @@ describe('DicoshotService', () => {
       });
     });
 
-    it('mention을 description 뒤에 덧붙인다', async () => {
+    it('mention을 content 필드에 넣어 실제 Discord 알림이 울리게 한다', async () => {
       await service.sendCustom({ title: '테스트', description: '본문', mention: '<@&123>' });
       expect(mockClient.send).toHaveBeenCalledWith({
+        content: '<@&123>',
         embeds: [
-          { title: '테스트', description: '본문\n<@&123>', color: undefined, fields: undefined },
+          { title: '테스트', description: '본문', color: undefined, fields: undefined },
         ],
       });
     });
 
-    it('description 없이 mention만 있으면 mention만 description으로 사용한다', async () => {
+    it('description 없이 mention만 있으면 content에만 mention이 들어간다', async () => {
       await service.sendCustom({ title: '테스트', mention: '<@&123>' });
       expect(mockClient.send).toHaveBeenCalledWith({
-        embeds: [{ title: '테스트', description: '<@&123>', color: undefined, fields: undefined }],
+        content: '<@&123>',
+        embeds: [{ title: '테스트', description: undefined, color: undefined, fields: undefined }],
       });
     });
 

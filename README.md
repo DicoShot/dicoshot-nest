@@ -88,7 +88,7 @@ export class DeployService {
       description: `v${version} deployed successfully`,
       color: 'success', // 'success' | 'danger' | 'warning' | 'info'
       fields: [{ name: 'Version', value: `v${version}`, inline: true }],
-      mention: '<@&123456789012345678>', // appended after the description
+      mention: '<@&123456789012345678>', // sent as Discord message content so the mention actually pings
     });
   }
 }
