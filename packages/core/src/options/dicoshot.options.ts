@@ -2,6 +2,8 @@ import { DicoshotMessages, Locale } from '../i18n/messages';
 
 export interface FilterOptions {
   ignore?: number[];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  ignoreErrors?: Function[];
   environment?: string | string[];
   mention?: string;
   throttle?: number;

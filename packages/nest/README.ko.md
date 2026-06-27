@@ -199,8 +199,9 @@ Discord에는 이런 형태로 도착합니다:
 | ---------------- | ------ | -------------------------------------------------------------------------- |
 | `minStatus`      | `500`  | 이 값 이상인 status 코드만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
 | `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)                          |
+| `ignoreErrors`   | -      | 알림하지 않을 에러 클래스 배열 (예: `[NotFoundException, UnauthorizedException]`) |
 | `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준)             |
-| `mention`        | -      | embed 본문에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)                      |
+| `mention`        | -      | 메시지에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)                          |
 | `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제                    |
 | `includeStack`   | `true` | 스택트레이스 포함 여부                                                     |
 | `includeRequest` | `true` | 요청 바디 포함 여부                                                        |

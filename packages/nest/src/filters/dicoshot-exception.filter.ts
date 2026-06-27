@@ -70,6 +70,8 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
 
     if (opts.ignore?.includes(status)) return false;
 
+    if (opts.ignoreErrors?.some((cls) => exception instanceof cls)) return false;
+
     if (opts.environment) {
       const envs = Array.isArray(opts.environment) ? opts.environment : [opts.environment];
       if (!envs.includes(process.env.NODE_ENV ?? 'development')) return false;

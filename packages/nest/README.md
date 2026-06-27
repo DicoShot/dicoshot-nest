@@ -200,8 +200,9 @@ This is what arrives in Discord:
 | ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
 | `minStatus`      | `500`   | Only notify for status codes at or above this value (unhandled exceptions are always treated as `500`) |
 | `ignore`         | -       | Array of HTTP status codes to skip notifying (e.g. `[404]`)                                            |
+| `ignoreErrors`   | -       | Array of error classes to skip notifying (e.g. `[NotFoundException, UnauthorizedException]`)           |
 | `environment`    | -       | Only notify in this environment (`string` or `string[]`, based on `NODE_ENV`)                          |
-| `mention`        | -       | Mention string to add to the embed body (e.g. `'<@&ROLE_ID>'`)                                         |
+| `mention`        | -       | Mention string to add to the message (e.g. `'<@&ROLE_ID>'`)                                            |
 | `throttle`       | -       | Suppress repeated notifications for the same error (class+method+path) for N seconds                   |
 | `includeStack`   | `true`  | Whether to include the stack trace                                                                     |
 | `includeRequest` | `true`  | Whether to include the request body                                                                    |
