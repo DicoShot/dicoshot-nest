@@ -15,6 +15,8 @@ export interface InterceptorOptions {
   excludePaths?: string[];
   onlyErrors?: boolean;
   minStatus?: number;
+  includeStack?: boolean;
+  includeRequest?: boolean;
 }
 
 export interface DicoshotWebhooks {

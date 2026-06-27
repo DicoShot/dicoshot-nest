@@ -150,6 +150,8 @@ export class OrderController {
 
 `title`/`description`은 고정 문자열 또는 `(args, result) => string` 형태의 함수를 받을 수 있습니다. `args`는 핸들러의 인자 배열, `result`는 반환값입니다.
 
+> `mention`은 `@DicoshotNotify()`에서 지원하지 않습니다. 멘션이 필요하면 `DicoshotService.sendCustom()`을 직접 사용하세요.
+
 ## 예외 자동 알림 (`filter`)
 
 `filter` 옵션을 켜면 `DicoshotExceptionFilter`가 전역 `APP_FILTER`로 등록됩니다. 기본적으로 처리되지 않은 예외와 HTTP status `500` 이상인 에러만 Discord로 전송합니다(`NotFoundException` 같은 4xx `HttpException`은 `minStatus`를 낮추지 않으면 알림하지 않습니다). HTTP 컨텍스트가 아닌 경우(WebSocket, RPC 등)는 알림하지 않고 무시합니다.
@@ -219,7 +221,7 @@ DicoshotModule.register({
 
 ## 느린 응답 / 에러 알림 (`interceptor`)
 
-`interceptor` 옵션을 켜면 `DicoshotInterceptor`가 전역 `APP_INTERCEPTOR`로 등록되어, 응답 시간이 임계값을 초과하면 Discord로 알림합니다. `filter`가 켜져 있지 않은 경우에는 에러 알림도 인터셉터가 함께 처리합니다(필터가 켜져 있으면 중복 알림을 막기 위해 인터셉터는 에러 알림을 보내지 않습니다) — 이때도 위에서 설명한 `Location`, `Stack Trace` 필드가 동일하게 포함됩니다.
+`interceptor` 옵션을 켜면 `DicoshotInterceptor`가 전역 `APP_INTERCEPTOR`로 등록되어, 응답 시간이 임계값을 초과하면 Discord로 알림합니다. `filter`가 켜져 있지 않은 경우에는 에러 알림도 인터셉터가 함께 처리합니다(필터가 켜져 있으면 중복 알림을 막기 위해 인터셉터는 에러 알림을 보내지 않습니다) — 이때도 위에서 설명한 `Location`, `Stack Trace` 필드가 동일하게 포함되며, 에러 발생까지 소요된 시간을 나타내는 `Duration` 필드도 추가됩니다.
 
 ```typescript
 DicoshotModule.register({
@@ -230,12 +232,14 @@ DicoshotModule.register({
 
 ### InterceptorOptions
 
-| 키              | 기본값  | 설명                                                                         |
-| --------------- | ------- | ---------------------------------------------------------------------------- |
-| `slowThreshold` | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                                          |
-| `excludePaths`  | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`)                         |
-| `onlyErrors`    | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행                            |
-| `minStatus`     | `500`   | 이 값 이상인 status의 에러만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
+| 키               | 기본값  | 설명                                                                         |
+| ---------------- | ------- | ---------------------------------------------------------------------------- |
+| `slowThreshold`  | `3000`  | 느린 응답으로 판단할 기준 시간 (ms)                                          |
+| `excludePaths`   | -       | 알림에서 제외할 경로 prefix 배열 (예: `['/health']`)                         |
+| `onlyErrors`     | `false` | `true`이면 느린 응답 알림은 끄고 에러 알림만 수행                            |
+| `minStatus`      | `500`   | 이 값 이상인 status의 에러만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
+| `includeStack`   | `true`  | 에러 알림에 스택트레이스 포함 여부                                           |
+| `includeRequest` | `true`  | 에러 알림에 요청 바디 포함 여부                                              |
 
 ```typescript
 DicoshotModule.register({
@@ -391,18 +395,18 @@ DicoshotModule.register({
 
 ## 요구사항
 
-- Node.js 18 이상
-- NestJS 10 이상
+- Node.js 20 이상
+- NestJS 10 또는 11
 
 ## 빌드
 
 ```bash
 # 전체 빌드
-npm run build --workspaces
+pnpm build
 
 # 개별 빌드
-cd dicoshot-core && npm run build
-cd dicoshot-nest && npm run build
+pnpm --filter dicoshot-core build
+pnpm --filter dicoshot-nest build
 ```
 
 ## 범위 외 (현재 버전)

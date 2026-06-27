@@ -59,7 +59,7 @@ export class DicoshotInterceptor implements NestInterceptor {
           const status = err instanceof HttpException ? err.getStatus() : 500;
           if (status >= (opts.minStatus ?? 500)) {
             const duration = Date.now() - start;
-            this.notifyError(request, err, duration).catch((e: Error) =>
+            this.notifyError(request, err, duration, opts).catch((e: Error) =>
               this.logger.warn(`Failed to send error notification: ${e.message}`),
             );
           }
@@ -103,7 +103,12 @@ export class DicoshotInterceptor implements NestInterceptor {
     await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
 
-  private async notifyError(request: Request, err: unknown, duration: number): Promise<void> {
+  private async notifyError(
+    request: Request,
+    err: unknown,
+    duration: number,
+    opts: InterceptorOptions,
+  ): Promise<void> {
     const webhookUrl = this.options.webhooks?.error ?? this.options.webhookUrl;
     if (!webhookUrl) {
       this.logger.warn('No error webhook URL configured; skipping Discord notification');
@@ -131,7 +136,18 @@ export class DicoshotInterceptor implements NestInterceptor {
       fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
     }
 
-    if (stack) {
+    if (opts.includeRequest !== false) {
+      const body = (request as Request & { body?: unknown }).body;
+      if (body && typeof body === 'object' && Object.keys(body).length > 0) {
+        fields.push({
+          name: msg.field.requestBody,
+          value: `\`\`\`json\n${JSON.stringify(body).slice(0, 900)}\n\`\`\``,
+          inline: false,
+        });
+      }
+    }
+
+    if (opts.includeStack !== false && stack) {
       fields.push({
         name: msg.field.stackTrace,
         value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,

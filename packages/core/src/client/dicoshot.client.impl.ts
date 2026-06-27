@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import { DiscordMessage } from '../message/discord.message';
 import { DicoshotOptions, RetryOptions } from '../options/dicoshot.options';
 import { DicoshotClient } from './dicoshot.client';
@@ -19,16 +17,27 @@ export class DicoshotClientImpl implements DicoshotClient {
     const { attempts, backoffMs } = this.resolveRetry();
 
     for (let attempt = 0; ; attempt++) {
+      let response: Response | undefined;
       try {
-        await axios.post(url, message, {
-          timeout: this.options.timeoutMs ?? 5000,
+        response = await fetch(url, {
+          method: 'POST',
+          body: JSON.stringify(message),
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(this.options.timeoutMs ?? 5000),
         });
-        return;
       } catch (err) {
         if (attempt >= attempts) throw err;
-        await this.delay(this.resolveDelay(err, backoffMs, attempt));
+        await this.delay(backoffMs * 2 ** attempt);
+        continue;
       }
+
+      if (response.ok) return;
+
+      if (attempt >= attempts) {
+        throw new Error(`Discord webhook responded with ${response.status}`);
+      }
+      // Discord가 429와 함께 보내는 Retry-After를 우선 따르고, 없으면 지수 백오프를 사용한다
+      await this.delay(this.resolveDelay(response, backoffMs, attempt));
     }
   }
 
@@ -48,10 +57,9 @@ export class DicoshotClientImpl implements DicoshotClient {
     };
   }
 
-  // Discord가 429와 함께 보내는 Retry-After를 우선 따르고, 없으면 지수 백오프를 사용한다
-  private resolveDelay(err: unknown, backoffMs: number, attempt: number): number {
-    if (axios.isAxiosError(err) && err.response?.status === 429) {
-      const retryAfter = err.response.headers['retry-after'];
+  private resolveDelay(response: Response, backoffMs: number, attempt: number): number {
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('retry-after');
       if (retryAfter) return Number(retryAfter) * 1000;
     }
     return backoffMs * 2 ** attempt;

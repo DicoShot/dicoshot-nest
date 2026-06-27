@@ -151,6 +151,8 @@ export class OrderController {
 
 `title`/`description` accept either a static string or a `(args, result) => string` function, where `args` is the handler's argument array and `result` is its return value.
 
+> `mention` is not available in `@DicoshotNotify()`. Use `DicoshotService.sendCustom()` directly if you need to add a mention.
+
 ## Automatic exception notifications (`filter`)
 
 Enabling the `filter` option registers `DicoshotExceptionFilter` as a global `APP_FILTER`. By default, it notifies Discord for unhandled exceptions and any error with an HTTP status of `500` or above (4xx `HttpException`s like `NotFoundException` are not notified unless `minStatus` is lowered). Non-HTTP contexts (WebSocket, RPC, etc.) are ignored and not notified.
@@ -220,7 +222,7 @@ Error notifications are sent to `webhooks.error` if configured, otherwise to the
 
 ## Slow response / error notifications (`interceptor`)
 
-Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates) — including the same `Location` and `Stack Trace` fields described above.
+Enabling the `interceptor` option registers `DicoshotInterceptor` as a global `APP_INTERCEPTOR`, notifying Discord when response time exceeds the threshold. When `filter` is not enabled, the interceptor also handles error notifications (when `filter` is enabled, the interceptor skips error notifications to avoid duplicates) — including the same `Location` and `Stack Trace` fields described above, plus a `Duration` field showing how long the request took before the error.
 
 ```typescript
 DicoshotModule.register({
@@ -231,12 +233,14 @@ DicoshotModule.register({
 
 ### InterceptorOptions
 
-| Key             | Default | Description                                                                                            |
-| --------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| `slowThreshold` | `3000`  | Threshold (ms) for considering a response slow                                                         |
-| `excludePaths`  | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`)                                |
-| `onlyErrors`    | `false` | If `true`, disables slow response notifications and only sends error notifications                     |
-| `minStatus`     | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
+| Key              | Default | Description                                                                                            |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| `slowThreshold`  | `3000`  | Threshold (ms) for considering a response slow                                                         |
+| `excludePaths`   | -       | Array of path prefixes excluded from notifications (e.g. `['/health']`)                                |
+| `onlyErrors`     | `false` | If `true`, disables slow response notifications and only sends error notifications                     |
+| `minStatus`      | `500`   | Only notify error responses at or above this status (unhandled exceptions are always treated as `500`) |
+| `includeStack`   | `true`  | Whether to include the stack trace in error notifications                                              |
+| `includeRequest` | `true`  | Whether to include the request body in error notifications                                             |
 
 ```typescript
 DicoshotModule.register({
@@ -392,18 +396,18 @@ DicoshotModule.register({
 
 ## Requirements
 
-- Node.js 18+
-- NestJS 10+
+- Node.js 20+
+- NestJS 10 or 11
 
 ## Build
 
 ```bash
 # Build everything
-npm run build --workspaces
+pnpm build
 
 # Build individually
-cd dicoshot-core && npm run build
-cd dicoshot-nest && npm run build
+pnpm --filter dicoshot-core build
+pnpm --filter dicoshot-nest build
 ```
 
 ## Out of scope (current version)
