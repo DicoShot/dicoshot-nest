@@ -403,7 +403,7 @@ DicoshotModule.register({
 ## 요구사항
 
 - Node.js 20 이상
-- NestJS 10 또는 11
+- NestJS 10, 11 또는 12
 
 ## 빌드
 

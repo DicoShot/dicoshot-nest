@@ -404,7 +404,7 @@ DicoshotModule.register({
 ## Requirements
 
 - Node.js 20+
-- NestJS 10 or 11
+- NestJS 10, 11, or 12
 
 ## Build
 
