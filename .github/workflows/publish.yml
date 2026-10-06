@@ -5,36 +5,48 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+  id-token: write # npm Trusted Publishing (OIDC)
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
+          cache: pnpm
+
+      # Trusted Publishing requires npm >= 11.5.1
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Build core
-        working-directory: dicoshot-core
-        run: npm run build
+      - name: Build
+        run: pnpm build
 
-      - name: Publish core
-        working-directory: dicoshot-core
-        run: npm publish || true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Test
+        run: pnpm test
 
-      - name: Build nest
-        working-directory: dicoshot-nest
-        run: npm run build
-
-      - name: Publish nest
-        working-directory: dicoshot-nest
-        run: npm publish || true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # pnpm pack resolves workspace:* to real versions; npm publish handles the OIDC exchange.
+      # Packages whose current version is already on npm are skipped.
+      - name: Publish packages
+        run: |
+          for dir in packages/core packages/nest; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "::notice::$name@$version already published, skipping"
+              continue
+            fi
+            tarball=$(cd "$dir" && pnpm pack --pack-destination "$RUNNER_TEMP" | tail -n 1)
+            npm publish "$tarball" --access public
+          done
