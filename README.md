@@ -259,12 +259,16 @@ Slow response notifications are sent to `webhooks.slow` if configured, otherwise
 
 ## Webhook retry (`retry`)
 
-If a webhook delivery fails (network error, Discord 5xx, rate limit, etc.), it's retried with exponential backoff. If Discord returns `429` with a `Retry-After` header, that value takes priority; otherwise the wait is `backoffMs * 2^attempt`.
+Retries are **enabled by default** (2 retries, 500ms backoff). Only transient failures are retried: network errors, `429`, and `5xx`. Other `4xx` responses (e.g. `400` invalid embed, `401`/`403`/`404` deleted webhook) fail immediately, since resending cannot succeed.
+
+Waiting between attempts uses exponential backoff (`backoffMs * 2^attempt`). If Discord returns `429` with a numeric `Retry-After` header (seconds, decimals allowed), that value is used instead; non-numeric values (such as an HTTP date) are ignored and the backoff is used. Every wait is capped at 30 seconds.
+
+> **Behavior change:** before this version `retry` was off by default. To restore the old behavior, set `retry: false`.
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
-  retry: true, // or a RetryOptions object. Disabled by default (no retries)
+  retry: false, // enabled by default; pass false to disable, or a RetryOptions object to tune
 });
 ```
 
@@ -282,7 +286,7 @@ DicoshotModule.register({
 });
 ```
 
-If all retries fail, the final error is propagated to the caller. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor` catch this error and only emit a WARN log, so it doesn't affect app behavior.
+If the final attempt fails, the error (status code and the first 200 characters of Discord's response body; never the webhook URL) is propagated to the caller. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor` catch this error and only emit a WARN log, so it doesn't affect app behavior.
 
 ## Configuration
 
@@ -303,7 +307,7 @@ If all retries fail, the final error is propagated to the caller. `DicoshotListe
 | `webhooks.slow`    | -       | Dedicated webhook URL for slow response notifications (falls back to `webhookUrl`)                                                                   |
 | `filter`           | `false` | Enable automatic exception notifications (`boolean` or [`FilterOptions`](#filteroptions))                                                            |
 | `interceptor`      | `false` | Enable slow response/error notifications (`boolean` or [`InterceptorOptions`](#interceptoroptions))                                                  |
-| `retry`            | `false` | Enable retries on webhook delivery failure (`boolean` or [`RetryOptions`](#retryoptions))                                                            |
+| `retry`            | `true`  | Retry transient webhook failures; `false` disables (`boolean` or [`RetryOptions`](#retryoptions))                                                    |
 
 ### Example: notify only on startup
 

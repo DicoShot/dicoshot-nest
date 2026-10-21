@@ -63,5 +63,9 @@ export interface DicoshotOptions {
   throttle?: number;
   filter?: boolean | FilterOptions;
   interceptor?: boolean | InterceptorOptions;
+  /**
+   * Retries transient failures (network errors, 429, 5xx). Enabled by default
+   * (2 retries, 500ms backoff); pass `false` to disable.
+   */
   retry?: boolean | RetryOptions;
 }
