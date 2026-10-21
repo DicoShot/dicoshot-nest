@@ -38,11 +38,16 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
     const status = exception instanceof HttpException ? exception.getStatus() : 500;
 
     if (this.options.filter) {
-      const opts = this.resolveOptions();
-      if (this.shouldNotify(exception, request, status, opts)) {
-        this.notify(exception, request, status, opts).catch((err: Error) =>
-          this.logger.warn(`Failed to send exception notification: ${err.message}`),
-        );
+      // 알림 경로의 어떤 예외도 오류 응답 자체를 바꾸면 안 된다
+      try {
+        const opts = this.resolveOptions();
+        if (this.shouldNotify(exception, request, status, opts)) {
+          this.notify(exception, request, status, opts).catch((err: Error) =>
+            this.logger.warn(`Failed to send exception notification: ${err.message}`),
+          );
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to prepare exception notification: ${(err as Error).message}`);
       }
     }
 

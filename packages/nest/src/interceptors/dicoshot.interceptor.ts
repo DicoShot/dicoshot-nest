@@ -57,12 +57,16 @@ export class DicoshotInterceptor implements NestInterceptor {
       catchError((err: unknown) => {
         // 에러 알림은 filter가 없을 때만 인터셉터에서 처리 (중복 방지)
         if (!this.options.filter) {
-          const status = err instanceof HttpException ? err.getStatus() : 500;
-          if (status >= (opts.minStatus ?? 500) && this.shouldNotifyError(err, request, opts)) {
-            const duration = Date.now() - start;
-            this.notifyError(request, err, duration, opts).catch((e: Error) =>
-              this.logger.warn(`Failed to send error notification: ${e.message}`),
-            );
+          try {
+            const status = err instanceof HttpException ? err.getStatus() : 500;
+            if (status >= (opts.minStatus ?? 500) && this.shouldNotifyError(err, request, opts)) {
+              const duration = Date.now() - start;
+              this.notifyError(request, err, duration, opts).catch((e: Error) =>
+                this.logger.warn(`Failed to send error notification: ${e.message}`),
+              );
+            }
+          } catch (e) {
+            this.logger.warn(`Failed to prepare error notification: ${(e as Error).message}`);
           }
         }
         return throwError(() => err);
