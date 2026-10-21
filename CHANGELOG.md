@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (dicoshot-nest) / 0.5.0 (dicoshot-core) — 2026-10-21
 
 ### Changed
 
