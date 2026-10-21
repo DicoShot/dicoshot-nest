@@ -8,7 +8,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 
-import type { DicoshotOptions, DiscordEmbed, InterceptorOptions } from 'dicoshot-core';
+import type { DicoshotOptions, InterceptorOptions } from 'dicoshot-core';
 import { DicoshotClientImpl, getMessages } from 'dicoshot-core';
 
 import { Request } from 'express';
@@ -16,11 +16,8 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
-import { StackUtil } from '../utils/stack.util';
+import { buildErrorEmbed, buildSlowEmbed } from '../utils/embed.builder';
 import { ThrottleUtil } from '../utils/throttle.util';
-
-const SLOW_COLOR = 0xfee75c;
-const ERROR_COLOR = 0xed4245;
 
 @Injectable()
 export class DicoshotInterceptor implements NestInterceptor {
@@ -109,23 +106,14 @@ export class DicoshotInterceptor implements NestInterceptor {
       return;
     }
 
-    const env = process.env.NODE_ENV ?? 'development';
-    const appName = this.options.applicationName ?? 'Unknown';
-    const now = new Date().toISOString();
-    const msg = getMessages(this.options.locale);
-
-    const embed: DiscordEmbed = {
-      title: `🐢 [${env}] ${appName} — ${msg.slowResponseLabel}`,
-      color: SLOW_COLOR,
-      fields: [
-        { name: msg.field.service, value: appName, inline: true },
-        { name: msg.field.environment, value: env, inline: true },
-        { name: msg.field.method, value: request.method, inline: true },
-        { name: msg.field.path, value: request.path, inline: true },
-        { name: msg.field.duration, value: `${duration}ms`, inline: true },
-      ],
-      timestamp: now,
-    };
+    const embed = buildSlowEmbed({
+      msg: getMessages(this.options.locale),
+      env: process.env.NODE_ENV ?? 'development',
+      appName: this.options.applicationName ?? 'Unknown',
+      method: request.method,
+      path: request.path,
+      durationMs: duration,
+    });
 
     await this.client.sendTo(webhookUrl, { embeds: [embed] });
   }
@@ -142,53 +130,18 @@ export class DicoshotInterceptor implements NestInterceptor {
       return;
     }
 
-    const env = process.env.NODE_ENV ?? 'development';
-    const appName = this.options.applicationName ?? 'Unknown';
-    const errorName = err instanceof Error ? err.constructor.name : 'UnknownError';
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    const stack = err instanceof Error ? err.stack : undefined;
-    const now = new Date().toISOString();
-    const msg = getMessages(this.options.locale);
-
-    const fields = [
-      { name: msg.field.service, value: appName, inline: true },
-      { name: msg.field.environment, value: env, inline: true },
-      { name: msg.field.method, value: request.method, inline: true },
-      { name: msg.field.path, value: request.path, inline: true },
-      { name: msg.field.duration, value: `${duration}ms`, inline: true },
-    ];
-
-    const location = StackUtil.extractLocation(stack);
-    if (location) {
-      fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
-    }
-
-    if (opts.includeRequest !== false) {
-      const body = (request as Request & { body?: unknown }).body;
-      if (body && typeof body === 'object' && Object.keys(body).length > 0) {
-        fields.push({
-          name: msg.field.requestBody,
-          value: `\`\`\`json\n${JSON.stringify(body).slice(0, 900)}\n\`\`\``,
-          inline: false,
-        });
-      }
-    }
-
-    if (opts.includeStack !== false && stack) {
-      fields.push({
-        name: msg.field.stackTrace,
-        value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
-        inline: false,
-      });
-    }
-
-    const embed: DiscordEmbed = {
-      title: `🚨 [${env}] ${appName} — ${errorName}`,
-      description: `\`${errorMessage}\``,
-      color: ERROR_COLOR,
-      fields,
-      timestamp: now,
-    };
+    const embed = buildErrorEmbed({
+      msg: getMessages(this.options.locale),
+      env: process.env.NODE_ENV ?? 'development',
+      appName: this.options.applicationName ?? 'Unknown',
+      error: err,
+      method: request.method,
+      path: request.path,
+      durationMs: duration,
+      body: (request as Request & { body?: unknown }).body,
+      includeStack: opts.includeStack !== false,
+      includeRequest: opts.includeRequest !== false,
+    });
 
     await this.client.sendTo(webhookUrl, {
       ...(opts.mention !== undefined && { content: opts.mention }),

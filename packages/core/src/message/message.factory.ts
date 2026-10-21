@@ -3,6 +3,7 @@ import * as os from 'os';
 import { getMessages } from '../i18n/messages';
 import { DicoshotOptions } from '../options/dicoshot.options';
 import { DiscordMessage } from './discord.message';
+import { fitMessage } from './embed.util';
 
 const STARTUP_COLOR = 5763719;
 const SHUTDOWN_COLOR = 15548997;
@@ -19,7 +20,7 @@ export class MessageFactory {
   startup(): DiscordMessage {
     const now = new Date().toISOString();
     const msg = getMessages(this.options.locale);
-    return {
+    return fitMessage({
       embeds: [
         {
           title: msg.startupTitle,
@@ -38,13 +39,13 @@ export class MessageFactory {
           timestamp: now,
         },
       ],
-    };
+    });
   }
 
   shutdown(): DiscordMessage {
     const now = new Date().toISOString();
     const msg = getMessages(this.options.locale);
-    return {
+    return fitMessage({
       embeds: [
         {
           title: msg.shutdownTitle,
@@ -62,6 +63,6 @@ export class MessageFactory {
           timestamp: now,
         },
       ],
-    };
+    });
   }
 }
