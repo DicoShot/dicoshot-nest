@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 
 import type { DiscordField, DiscordMessage } from 'dicoshot-core';
-import { DicoshotClientImpl } from 'dicoshot-core';
+import { DicoshotClientImpl, fitEmbed } from 'dicoshot-core';
 
 import { DICOSHOT_CLIENT } from './dicoshot.constants';
 
@@ -53,7 +53,7 @@ export class DicoshotService {
 
     return this.send({
       ...(mention !== undefined && { content: mention }),
-      embeds: [{ title, description, color: resolvedColor, fields }],
+      embeds: [fitEmbed({ title, description, color: resolvedColor, fields })],
     });
   }
 }

@@ -7,16 +7,14 @@ import {
   Logger,
 } from '@nestjs/common';
 
-import type { DicoshotOptions, DiscordEmbed, FilterOptions } from 'dicoshot-core';
+import type { DicoshotOptions, FilterOptions } from 'dicoshot-core';
 import { DicoshotClientImpl, getMessages } from 'dicoshot-core';
 
 import { Request, Response } from 'express';
 
 import { DICOSHOT_CLIENT, DICOSHOT_OPTIONS } from '../dicoshot.constants';
-import { StackUtil } from '../utils/stack.util';
+import { buildErrorEmbed } from '../utils/embed.builder';
 import { ThrottleUtil } from '../utils/throttle.util';
-
-const ERROR_COLOR = 0xed4245;
 
 @Catch()
 export class DicoshotExceptionFilter implements ExceptionFilter {
@@ -108,53 +106,18 @@ export class DicoshotExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    const env = process.env.NODE_ENV ?? 'development';
-    const appName = this.options.applicationName ?? 'Unknown';
-    const errorName = exception instanceof Error ? exception.constructor.name : 'UnknownError';
-    const errorMessage = exception instanceof Error ? exception.message : String(exception);
-    const stack = exception instanceof Error ? exception.stack : undefined;
-    const now = new Date().toISOString();
-    const msg = getMessages(this.options.locale);
-
-    const fields = [
-      { name: msg.field.service, value: appName, inline: true },
-      { name: msg.field.environment, value: env, inline: true },
-      { name: msg.field.status, value: String(status), inline: true },
-      { name: msg.field.method, value: request.method, inline: true },
-      { name: msg.field.path, value: request.path, inline: true },
-    ];
-
-    const location = StackUtil.extractLocation(stack);
-    if (location) {
-      fields.push({ name: msg.field.location, value: `\`${location}\``, inline: false });
-    }
-
-    if (opts.includeRequest !== false) {
-      const body = (request as Request & { body?: unknown }).body;
-      if (body && typeof body === 'object' && Object.keys(body).length > 0) {
-        fields.push({
-          name: msg.field.requestBody,
-          value: `\`\`\`json\n${JSON.stringify(body).slice(0, 900)}\n\`\`\``,
-          inline: false,
-        });
-      }
-    }
-
-    if (opts.includeStack !== false && stack) {
-      fields.push({
-        name: msg.field.stackTrace,
-        value: `\`\`\`\n${stack.slice(0, 1000)}\n\`\`\``,
-        inline: false,
-      });
-    }
-
-    const embed: DiscordEmbed = {
-      title: `🚨 [${env}] ${appName} — ${errorName}`,
-      description: `\`${errorMessage}\``,
-      color: ERROR_COLOR,
-      fields,
-      timestamp: now,
-    };
+    const embed = buildErrorEmbed({
+      msg: getMessages(this.options.locale),
+      env: process.env.NODE_ENV ?? 'development',
+      appName: this.options.applicationName ?? 'Unknown',
+      error: exception,
+      method: request.method,
+      path: request.path,
+      status,
+      body: (request as Request & { body?: unknown }).body,
+      includeStack: opts.includeStack !== false,
+      includeRequest: opts.includeRequest !== false,
+    });
 
     await this.client.sendTo(webhookUrl, {
       ...(opts.mention !== undefined && { content: opts.mention }),

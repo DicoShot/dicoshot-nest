@@ -1,4 +1,5 @@
 import { DiscordMessage } from '../message/discord.message';
+import { fitMessage } from '../message/embed.util';
 import { DicoshotOptions, RetryOptions } from '../options/dicoshot.options';
 import { DicoshotClient } from './dicoshot.client';
 
@@ -15,13 +16,15 @@ export class DicoshotClientImpl implements DicoshotClient {
 
   async sendTo(url: string, message: DiscordMessage): Promise<void> {
     const { attempts, backoffMs } = this.resolveRetry();
+    // 어떤 경로로 만든 메시지든 Discord 한도를 넘어 400으로 유실되지 않게 마지막으로 보정한다
+    const body = JSON.stringify(fitMessage(message));
 
     for (let attempt = 0; ; attempt++) {
       let response: Response | undefined;
       try {
         response = await fetch(url, {
           method: 'POST',
-          body: JSON.stringify(message),
+          body,
           headers: { 'Content-Type': 'application/json' },
           signal: AbortSignal.timeout(this.options.timeoutMs ?? 5000),
         });
