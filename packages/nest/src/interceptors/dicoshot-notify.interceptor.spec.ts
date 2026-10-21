@@ -1,7 +1,7 @@
-import { CallHandler, ExecutionContext } from '@nestjs/common';
+import { CallHandler, ExecutionContext, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { Observable, of, throwError } from 'rxjs';
+import { lastValueFrom, Observable, of, throwError } from 'rxjs';
 
 import { DicoshotNotifyOptions } from '../decorators/dicoshot-notify.decorator';
 import { DicoshotService } from '../dicoshot.service';
@@ -96,5 +96,70 @@ describe('DicoshotNotifyInterceptor', () => {
     const value = await new Promise((resolve) => result$.subscribe({ next: resolve }));
 
     expect(value).toBe('ok');
+  });
+
+  describe('알림 경로 예외 격리', () => {
+    let warn: jest.SpyInstance;
+
+    beforeEach(() => {
+      warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    });
+
+    afterEach(() => warn.mockRestore());
+
+    it('title 리졸버가 던져도 핸들러 결과가 그대로 나오고 warn 로그가 남는다', async () => {
+      reflector.get.mockReturnValue({
+        title: () => {
+          throw new Error('resolver boom');
+        },
+      });
+      const result = await lastValueFrom(
+        interceptor.intercept(createContext(), createCallHandler(of({ ok: true }))),
+      );
+
+      expect(result).toEqual({ ok: true });
+      expect(dicoshot.sendCustom).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('resolver boom'));
+    });
+
+    it('description 리졸버가 던져도 응답은 영향이 없다', async () => {
+      reflector.get.mockReturnValue({
+        title: 't',
+        description: () => {
+          throw new Error('desc boom');
+        },
+      });
+      const result = await lastValueFrom(
+        interceptor.intercept(createContext(), createCallHandler(of('ok'))),
+      );
+
+      expect(result).toBe('ok');
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('sendCustom이 동기로 던져도 응답은 영향이 없다', async () => {
+      reflector.get.mockReturnValue({ title: 't' });
+      dicoshot.sendCustom.mockImplementation(() => {
+        throw new Error('send boom');
+      });
+      const result = await lastValueFrom(
+        interceptor.intercept(createContext(), createCallHandler(of('ok'))),
+      );
+
+      expect(result).toBe('ok');
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('send boom'));
+    });
+
+    it('sendCustom이 reject해도 응답은 영향이 없고 unhandled rejection이 없다', async () => {
+      reflector.get.mockReturnValue({ title: 't' });
+      dicoshot.sendCustom.mockRejectedValue(new Error('async boom'));
+      const result = await lastValueFrom(
+        interceptor.intercept(createContext(), createCallHandler(of('ok'))),
+      );
+      await new Promise((r) => setImmediate(r));
+
+      expect(result).toBe('ok');
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('async boom'));
+    });
   });
 });
