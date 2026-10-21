@@ -258,12 +258,16 @@ DicoshotModule.register({
 
 ## Webhook 재전송 (`retry`)
 
-webhook 전송이 실패하면(네트워크 오류, Discord 5xx, rate limit 등) 지수 백오프로 재시도합니다. Discord가 `429`와 함께 `Retry-After` 헤더를 보내면 그 값을 우선 사용하고, 그 외에는 `backoffMs * 2^시도횟수`로 대기합니다.
+재시도는 **기본으로 켜져 있습니다**(2회, 500ms 백오프). 일시적인 실패만 재시도합니다: 네트워크 오류, `429`, `5xx`. 그 밖의 `4xx`(`400` 잘못된 임베드, `401`/`403`/`404` 삭제된 webhook 등)는 다시 보내도 성공할 수 없으므로 즉시 실패합니다.
+
+시도 사이 대기는 지수 백오프(`backoffMs * 2^시도횟수`)입니다. Discord가 `429`와 함께 숫자 `Retry-After` 헤더(초, 소수 허용)를 보내면 그 값을 쓰고, 숫자가 아닌 값(HTTP 날짜 등)은 무시하고 백오프를 씁니다. 모든 대기는 30초로 제한됩니다.
+
+> **동작 변경:** 이전 버전에서는 `retry`가 기본으로 꺼져 있었습니다. 예전 동작이 필요하면 `retry: false`로 설정하세요.
 
 ```typescript
 DicoshotModule.register({
   webhookUrl: process.env.DISCORD_WEBHOOK_URL,
-  retry: true, // 또는 RetryOptions 객체. 기본값은 꺼져 있음 (재시도 없음)
+  retry: false, // 기본은 켜짐. false면 끄고, RetryOptions 객체로 세부 조정
 });
 ```
 
@@ -281,7 +285,7 @@ DicoshotModule.register({
 });
 ```
 
-모든 재시도가 실패하면 최종 에러가 호출자에게 전달됩니다. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor`는 이 에러를 잡아 WARN 로그만 남기므로 앱 동작에는 영향이 없습니다.
+마지막 시도까지 실패하면 상태 코드와 Discord 응답 본문 앞 200자(webhook URL은 절대 포함하지 않음)를 담은 에러가 호출자에게 전달됩니다. `DicoshotListener`/`DicoshotExceptionFilter`/`DicoshotInterceptor`는 이 에러를 잡아 WARN 로그만 남기므로 앱 동작에는 영향이 없습니다.
 
 ## 설정
 
@@ -302,7 +306,7 @@ DicoshotModule.register({
 | `webhooks.slow`    | -       | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                    |
 | `filter`           | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                                                      |
 | `interceptor`      | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions))                                       |
-| `retry`            | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))                                           |
+| `retry`            | `true`  | webhook 일시 실패 시 재시도. `false`면 끔 (`boolean` 또는 [`RetryOptions`](#retryoptions))                                    |
 
 ### 예시: 시작 시에만 알림
 
