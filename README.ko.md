@@ -193,16 +193,16 @@ Discord에는 이런 형태로 도착합니다:
 
 ### FilterOptions
 
-| 키               | 기본값 | 설명                                                                       |
-| ---------------- | ------ | -------------------------------------------------------------------------- |
-| `minStatus`      | `500`  | 이 값 이상인 status 코드만 알림 (처리되지 않은 예외는 항상 `500`으로 취급) |
-| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)                          |
+| 키               | 기본값 | 설명                                                                              |
+| ---------------- | ------ | --------------------------------------------------------------------------------- |
+| `minStatus`      | `500`  | 이 값 이상인 status 코드만 알림 (처리되지 않은 예외는 항상 `500`으로 취급)        |
+| `ignore`         | -      | 알림하지 않을 HTTP status 코드 배열 (예: `[404]`)                                 |
 | `ignoreErrors`   | -      | 알림하지 않을 에러 클래스 배열 (예: `[NotFoundException, UnauthorizedException]`) |
-| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준)             |
-| `mention`        | -      | 메시지에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)                          |
-| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제                    |
-| `includeStack`   | `true` | 스택트레이스 포함 여부                                                     |
-| `includeRequest` | `true` | 요청 바디 포함 여부                                                        |
+| `environment`    | -      | 이 환경에서만 알림 (`string` 또는 `string[]`, `NODE_ENV` 기준)                    |
+| `mention`        | -      | 메시지에 추가할 멘션 문자열 (예: `'<@&ROLE_ID>'`)                                 |
+| `throttle`       | -      | 동일 에러(클래스+메서드+경로) 반복 알림을 N초 동안 억제                           |
+| `includeStack`   | `true` | 스택트레이스 포함 여부                                                            |
+| `includeRequest` | `true` | 요청 바디 포함 여부                                                               |
 
 ```typescript
 DicoshotModule.register({
@@ -285,24 +285,24 @@ DicoshotModule.register({
 
 ## 설정
 
-| 키                 | 기본값  | 설명                                                                                                                        |
-| ------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `webhookUrl`       | -       | Discord Webhook URL. 미설정 시 자동 비활성화                                                                                |
-| `enabled`          | `true`  | 전체 활성화 토글 (시작/종료 알림에 적용)                                                                                    |
-| `notifyOnStartup`  | `true`  | 시작 알림 발송 여부                                                                                                         |
-| `notifyOnShutdown` | `true`  | 종료 알림 발송 여부                                                                                                         |
-| `applicationName`  | -       | embed에 표시될 서비스 이름                                                                                                  |
-| `locale`           | `'en'`  | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체 |
-| `timeoutMs`        | `5000`  | HTTP 타임아웃 (ms)                                                                                                          |
-| `global`           | `false` | 전역 모듈로 등록. 각 모듈에 `DicoshotModule`을 임포트하지 않아도 `DicoshotService` 주입 가능                                |
+| 키                 | 기본값  | 설명                                                                                                                          |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `webhookUrl`       | -       | Discord Webhook URL. 미설정 시 자동 비활성화                                                                                  |
+| `enabled`          | `true`  | 전체 활성화 토글 (시작/종료 알림에 적용)                                                                                      |
+| `notifyOnStartup`  | `true`  | 시작 알림 발송 여부                                                                                                           |
+| `notifyOnShutdown` | `true`  | 종료 알림 발송 여부                                                                                                           |
+| `applicationName`  | -       | embed에 표시될 서비스 이름                                                                                                    |
+| `locale`           | `'en'`  | 알림 제목/필드 이름 언어: `'en'` \| `'ko'` \| `'ja'` \| `'zh'`, 또는 직접 만든 [`DicoshotMessages`](#예시-커스텀-언어) 객체   |
+| `timeoutMs`        | `5000`  | HTTP 타임아웃 (ms)                                                                                                            |
+| `global`           | `false` | 전역 모듈로 등록. 각 모듈에 `DicoshotModule`을 임포트하지 않아도 `DicoshotService` 주입 가능                                  |
 | `environment`      | -       | 공통 기본값: 이 환경에서만 알림 (`string` 또는 `string[]`). `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능 |
-| `mention`          | -       | 공통 기본값: 모든 에러 알림에 추가할 멘션 문자열. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능          |
-| `throttle`         | -       | 공통 기본값: 동일 에러 반복 알림을 N초 동안 억제. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능          |
-| `webhooks.error`   | -       | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                       |
-| `webhooks.slow`    | -       | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                  |
-| `filter`           | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                                                    |
-| `interceptor`      | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions))                                     |
-| `retry`            | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))                                         |
+| `mention`          | -       | 공통 기본값: 모든 에러 알림에 추가할 멘션 문자열. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능           |
+| `throttle`         | -       | 공통 기본값: 동일 에러 반복 알림을 N초 동안 억제. `filter`와 `interceptor` 모두 적용, 개별 옵션으로 오버라이드 가능           |
+| `webhooks.error`   | -       | 예외 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                         |
+| `webhooks.slow`    | -       | 느린 응답 알림 전용 webhook URL (없으면 `webhookUrl` 사용)                                                                    |
+| `filter`           | `false` | 예외 자동 알림 활성화 (`boolean` 또는 [`FilterOptions`](#filteroptions))                                                      |
+| `interceptor`      | `false` | 느린 응답/에러 알림 활성화 (`boolean` 또는 [`InterceptorOptions`](#interceptoroptions))                                       |
+| `retry`            | `false` | webhook 전송 실패 시 재시도 활성화 (`boolean` 또는 [`RetryOptions`](#retryoptions))                                           |
 
 ### 예시: 시작 시에만 알림
 

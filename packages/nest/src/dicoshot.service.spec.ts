@@ -76,9 +76,7 @@ describe('DicoshotService', () => {
       await service.sendCustom({ title: '테스트', description: '본문', mention: '<@&123>' });
       expect(mockClient.send).toHaveBeenCalledWith({
         content: '<@&123>',
-        embeds: [
-          { title: '테스트', description: '본문', color: undefined, fields: undefined },
-        ],
+        embeds: [{ title: '테스트', description: '본문', color: undefined, fields: undefined }],
       });
     });
 
